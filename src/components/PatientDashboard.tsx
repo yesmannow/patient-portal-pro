@@ -57,10 +57,10 @@ export function PatientDashboard() {
   const myCases = (cases || [])
     .filter((c) => c.patientId === currentPatient?.id)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const activeCases = myCases.filter((c) => c.status !== 'resolved');
   const myAppointments = (appointments || [])
-    .filter((a) => a.patientId === currentPatient?.id && a.status === 'scheduled')
-    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+    .sort((a, b) => new Date(a.dateTime).getT
+  return (
+      <div className="flex items-center justify-between">
 
   return (
     <div className="space-y-6">
@@ -152,10 +152,6 @@ export function PatientDashboard() {
                             <Badge variant="secondary" className="text-xs">
                               {urgencyLabels[caseItem.urgency]}
                             </Badge>
-                          </div>
-                          <h3 className="font-semibold truncate">{caseItem.subject}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                            {caseItem.description}
                           </p>
                           <p className="text-xs text-muted-foreground mt-2">
                             {format(new Date(caseItem.createdAt), 'MMM d, yyyy')}
@@ -215,14 +211,17 @@ export function PatientDashboard() {
         <>
           <NewCaseDialog open={newCaseOpen} onOpenChange={setNewCaseOpen} patientId={currentPatient.id} />
           {selectedCase && (
-            <CaseDetailDialog
-              case={selectedCase}
-              open={!!selectedCase}
-              onOpenChange={(open) => !open && setSelectedCase(null)}
+            <CaseDetailDia
+          
             />
-          )}
         </>
-      )}
     </div>
-  )
 }
+
+
+
+
+
+
+
+
