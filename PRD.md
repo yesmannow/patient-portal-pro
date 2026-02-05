@@ -13,11 +13,11 @@ This application requires role-based access control (patient vs. provider with d
 ## Essential Features
 
 ### Patient Authentication & Profile Management
-- **Functionality**: Secure login for patients; profile displays firstName, lastName, dateOfBirth, contact information, preferredContactMethod, conditionType, patientStatus, and onboardingSource
-- **Purpose**: Establishes patient identity, tracks care journey, enables targeted communication based on condition type and status
-- **Trigger**: Patient navigates to portal URL or clicks login link
-- **Progression**: Landing page → Login form → Patient Dashboard with cases and appointments
-- **Success criteria**: Patients can log in, view their structured profile with all enum fields displayed clearly; system routes based on role
+- **Functionality**: Secure login for patients; profile displays firstName, lastName, dateOfBirth, contact information, preferredContactMethod, conditionType, patientStatus, and onboardingSource; tabbed interface for profile information and health document management
+- **Purpose**: Establishes patient identity, tracks care journey, enables targeted communication based on condition type and status, provides centralized storage for medical documents
+- **Trigger**: Patient navigates to portal URL or clicks login link; clicks profile tab in navigation
+- **Progression**: Landing page → Login form → Patient Dashboard → Profile tab → View personal information or Documents tab → Upload/manage medical files
+- **Success criteria**: Patients can log in, view their structured profile with all enum fields displayed clearly; upload documents up to 10MB categorized by type (labResults|imaging|insurance|referral|other); download and delete their documents; documents persist and are associated with patient ID
 
 ### Provider Authentication & Availability Management
 - **Functionality**: Secure login for providers; profile displays name, role (physician|therapist|nurse|admin), specialty, and availabilityStatus
@@ -58,6 +58,9 @@ This application requires role-based access control (patient vs. provider with d
 
 - **Unauthenticated access attempts**: Redirect to login; preserve intended destination for post-login redirect
 - **Empty patient queue**: Show helpful onboarding message with clinical context (e.g., "No active cases – your care team will respond within 24 hours")
+- **Empty document library**: Show helpful upload prompt with clear categories and file requirements
+- **Large file uploads**: Prevent files over 10MB; show clear error message with file size limit
+- **Unsupported file types**: Accept common medical document formats (PDF, images, Word docs); reject others with helpful message
 - **Long message threads**: Auto-collapse older messages beyond 10; display expand control
 - **Missing patient data**: Required fields (firstName, lastName, dateOfBirth, preferredContactMethod, conditionType) must be captured; gracefully prompt for completion
 - **Concurrent case updates**: Last-write-wins for status changes; display warning if case modified by another provider
@@ -113,16 +116,19 @@ Animations should **orient users during clinical workflow transitions and provid
 ## Component Selection
 
 **Components**: 
-- **Dialog** for new case creation, appointment booking – modal focus on structured form entry
-- **Card** for case listings, patient profiles – clean, bordered containers for medical information
-- **Badge** for caseType, urgency, patientStatus, providerRole, availabilityStatus – color-coded enum indicators
-- **Select** for all enum fields (caseType, urgency, status, providerRole, conditionType, etc.) – enforces structured data entry
-- **Button** variants: primary (medical blue) for main actions, secondary (outline) for cancel, destructive (red) for urgent actions
-- **Textarea** for message composition, case descriptions
+- **Dialog** for new case creation, appointment booking, document upload – modal focus on structured form entry
+- **Tabs** for patient profile navigation (profile info vs. documents) – clean segmentation of related content
+- **Card** for case listings, patient profiles, document category groups – clean, bordered containers for medical information
+- **Badge** for caseType, urgency, patientStatus, providerRole, availabilityStatus, documentCategory – color-coded enum indicators
+- **Select** for all enum fields (caseType, urgency, status, providerRole, conditionType, documentCategory, etc.) – enforces structured data entry
+- **Button** variants: primary (medical blue) for main actions, secondary (outline) for cancel, destructive (red) for urgent actions and delete
+- **Input** with file type for document uploads – supports PDF, images, Word documents
+- **Textarea** for message composition, case descriptions, document notes
 - **Separator** to divide patient info sections and message threads
 - **ScrollArea** for long message threads in clinical cases
 - **Avatar** with role badges for patient and provider identity in messages
-- **Toast** (sonner) for case assignments, urgent case alerts, status confirmations
+- **Toast** (sonner) for case assignments, urgent case alerts, status confirmations, upload success/errors
+- **AlertDialog** for destructive actions like document deletion – requires confirmation
 
 **Customizations**:
 - **Case Card Component**: Custom card with left-border color by urgency (urgent=red 4px, timeSensitive=amber 4px, routine=blue 2px); caseType badge in header
@@ -150,6 +156,15 @@ Animations should **orient users during clinical workflow transitions and provid
 - **CheckCircle** for resolved status
 - **UserCircle** for patient
 - **Stethoscope** for providers
+- **UploadSimple** for document upload action
+- **File** for generic documents
+- **Heartbeat** for lab results
+- **FileText** for imaging reports
+- **IdentificationCard** for insurance documents and profile tab
+- **ClipboardText** for referral letters
+- **Folder** / **FolderOpen** for document categories and documents tab
+- **DownloadSimple** for document download
+- **Trash** for document deletion
 
 **Spacing**:
 - Container padding: `p-6` (24px) on desktop, `p-4` (16px) on mobile

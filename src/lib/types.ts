@@ -89,3 +89,16 @@ export interface DashboardMetrics {
   resolutionRate: number
   upcomingAppointments: number
 }
+
+export type DocumentCategory = 'labResults' | 'imaging' | 'insurance' | 'referral' | 'other'
+
+export interface HealthDocument {
+  id: string
+  patientId: string
+  fileName: string
+  fileSize: number
+  category: DocumentCategory
+  uploadedAt: string
+  description?: string
+  base64Data: string
+}
