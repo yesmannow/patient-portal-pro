@@ -1,93 +1,87 @@
-import { useState, useMemo } from 'react'
-import { Card, CardContent, CardDescription
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-  SupportInquiry, 
-  Patient, 
-  SupportInquiryStatus 
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ChatCircle, 
   DesktopTower, 
-  PaperPlan
+  PaperPlaneTilt, 
   CheckCircle, 
   UserCircle,
-} from '@phosphor-ic
+  Question,
+  Headset,
+  CreditCard,
+  Clock,
+  Warning
+} from '@phosphor-icons/react';
+import { toast } from 'sonner';
+import { useKV } from '@github/spark/hooks';
+import type { SupportInquiry, Patient, SupportInquiryStatus, SupportInquiryCategory } from '@/lib/types';
 
-  const [in
-  const [patie
-  const [selec
-  const [isInter
-  const [sho
-    patientId: '',
-    subje
-    priority: '
+interface SupportMessage {
+  id: string;
+  inquiryId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'patient' | 'staff';
+  body: string;
+  timestamp: string;
+  isInternal?: boolean;
+}
 
-    if (activ
-  }, [
-  const sortedInquiries = useM
-      const statusOrder = { ne
+export function SupportDashboard() {
+  const [inquiries, setInquiries] = useKV<SupportInquiry[]>('support-inquiries', []);
+  const [patients, setPatients] = useKV<Patient[]>('support-patients', []);
+  const [messages, setMessages] = useKV<SupportMessage[]>('support-messages', []);
+  const [selectedInquiry, setSelectedInquiry] = useState<SupportInquiry | null>(null);
+  const [isInternal, setIsInternal] = useState(false);
+  const [messageText, setMessageText] = useState('');
+  const [activeFilter, setActiveFilter] = useState<SupportInquiryStatus | 'all'>('all');
 
-    })
+  const sortedInquiries = useMemo(() => {
+    const statusOrder: Record<SupportInquiryStatus, number> = { 
+      new: 0, 
+      inProgress: 1, 
+      followUp: 2,
+      resolved: 3 
+    };
+    return [...(inquiries || [])].sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+  }, [inquiries]);
 
-    if (!selectedInquiry) return []
-  }, [messages, selectedInquiry])
-  
-    inProgress: (inquiries || []).filter(i => i.status === 'inProgress').length,
-    resolved: (inquiries || []).filter(i => i.status
+  const filteredInquiries = useMemo(() => {
+    if (activeFilter === 'all') return sortedInquiries;
+    return sortedInquiries.filter(inq => inq.status === activeFilter);
+  }, [sortedInquiries, activeFilter]);
 
-    const patient = (patients || []).find(p => p.id === patientId)
-  }
-  const getCategoryIcon = (category: SupportInqu
-      case 'techni
-      case 'insurance': return <Question className
-    }
-
-    const variants = {
-    
-
-    return <Badge className={variants[statu
-
-    const variants = {
-      medium: 'bg-slate-600 tex
-
-  }
-  const handleSendMessage = () => {
-
-      id: `msg-${Date.now()}`,
-      senderId: 'staff-001',
-      senderRole: 'staff',
-      
-    }
-
-    setIsInternal(false)
-    if (!selectedInquiry) return []
-    return (messages || []).filter(msg => msg.inquiryId === selectedInquiry.id)
-  }, [messages, selectedInquiry])
+  const inquiryMessages = useMemo(() => {
+    if (!selectedInquiry) return [];
+    return (messages || []).filter(msg => msg.inquiryId === selectedInquiry.id);
+  }, [messages, selectedInquiry]);
 
   const stats = useMemo(() => ({
     new: (inquiries || []).filter(i => i.status === 'new').length,
     inProgress: (inquiries || []).filter(i => i.status === 'inProgress').length,
     followUp: (inquiries || []).filter(i => i.status === 'followUp').length,
     resolved: (inquiries || []).filter(i => i.status === 'resolved').length
-  }), [inquiries])
+  }), [inquiries]);
 
   const getPatientName = (patientId: string) => {
-    const patient = (patients || []).find(p => p.id === patientId)
-    return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'
-  }
+    const patient = (patients || []).find(p => p.id === patientId);
+    return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient';
+  };
 
   const getCategoryIcon = (category: SupportInquiryCategory) => {
     switch (category) {
-      case 'technical': return <DesktopTower className="w-4 h-4" weight="duotone" />
-      case 'billing': return <CreditCard className="w-4 h-4" weight="duotone" />
-      case 'insurance': return <Question className="w-4 h-4" weight="duotone" />
-      default: return <Headset className="w-4 h-4" weight="duotone" />
+      case 'technical': return <DesktopTower className="w-4 h-4" weight="duotone" />;
+      case 'billing': return <CreditCard className="w-4 h-4" weight="duotone" />;
+      case 'insurance': return <Question className="w-4 h-4" weight="duotone" />;
+      default: return <Headset className="w-4 h-4" weight="duotone" />;
     }
-  }
+  };
 
   const getStatusBadge = (status: SupportInquiryStatus) => {
     const variants = {
@@ -95,21 +89,21 @@ import {
       inProgress: 'bg-amber-600 text-white',
       followUp: 'bg-purple-600 text-white',
       resolved: 'bg-green-600 text-white'
-    }
-    return <Badge className={variants[status]}>{status.replace(/([A-Z])/g, ' $1').trim()}</Badge>
-  }
+    };
+    return <Badge className={variants[status]}>{status.replace(/([A-Z])/g, ' $1').trim()}</Badge>;
+  };
 
   const getPriorityBadge = (priority: 'low' | 'medium' | 'high') => {
     const variants = {
       low: 'bg-slate-500 text-white',
       medium: 'bg-slate-600 text-white',
       high: 'bg-red-600 text-white'
-    }
-    return <Badge className={variants[priority]}>{priority}</Badge>
-  }
+    };
+    return <Badge className={variants[priority]}>{priority}</Badge>;
+  };
 
   const handleSendMessage = () => {
-    if (!selectedInquiry || !messageText.trim()) return
+    if (!selectedInquiry || !messageText.trim()) return;
 
     const newMessage: SupportMessage = {
       id: `msg-${Date.now()}`,
@@ -120,193 +114,60 @@ import {
       body: messageText,
       timestamp: new Date().toISOString(),
       isInternal
-    }
+    };
 
-    setMessages(current => [...(current || []), newMessage])
-    setMessageText('')
-    setIsInternal(false)
-    toast.success('Message sent')
+    setMessages(current => [...(current || []), newMessage]);
+    setMessageText('');
+    setIsInternal(false);
+    toast.success('Message sent');
 
     setInquiries(current =>
       (current || []).map(inq =>
         inq.id === selectedInquiry.id
-      description: '',
-    })
-  }
-  ret
+          ? { ...inq, status: 'inProgress' as SupportInquiryStatus }
+          : inq
+      )
+    );
+  };
 
-          <div className="flex
-              <Headset className="w-10 h-10 text-purple-600" weight="duotone" />
-     
-   
+  const handleUpdateStatus = (inquiryId: string, newStatus: SupportInquiryStatus) => {
+    setInquiries(current =>
+      (current || []).map(inq =>
+        inq.id === inquiryId ? { ...inq, status: newStatus } : inq
+      )
+    );
+    if (selectedInquiry?.id === inquiryId) {
+      setSelectedInquiry(prev => prev ? { ...prev, status: newStatus } : null);
+    }
+    toast.success(`Status updated to ${newStatus}`);
+  };
 
-                </Button>
-              <DialogConten
-                  <DialogTitle>C
-                </DialogHead
-             
-                    <
-                        <SelectV
-                      <SelectContent>
-                          <SelectItem key={p.id} value={p.id}>
-                          </SelectItem>
-             
-               
-       
-     
-
-                        </SelectTrigger>
-                          <SelectItem valu
-                 
-                        </
-                    </div>
-                    <div className="space-y-2">
-                      <Select value={newInquiry.priority} onValueChange={(v) =>
-               
-     
-
-                        </SelectCon
-   
-
-                    <Label htmlFor="s
-                      id="subject"
-                      onChange={(e) => setNewInquiry(pr
-            
-
-
-                      id="description
-                      onChange
-                      rows={4}
-                  </div>
-                <DialogFooter>
-                    Cancel
-                  <B
-                  </Button>
-              </DialogContent>
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-gradient-to-br from-card via-secondary to-card sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-purple-600 shadow-lg">
+              <Headset size={24} weight="bold" className="text-white sm:w-7 sm:h-7" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground" style={{ letterSpacing: '-0.02em' }}>
+                Support Portal
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
+                Administrative customer service system
+              </p>
+            </div>
           </div>
-     
-
-            <CardHeader className="flex flex-row items-cen
-              <Clock className="h-
-            <CardCo
-              <p cla
-          </Card>
-          <Card cl
-              <CardTit
-            </CardHeader
-      
-            </CardContent>
-
-
-          
-            <CardContent>
-              <p className="text-xs text-muted-foreground mt-
-          </C
-          <Card className="hover:border-green-500 transition-color
-              <CardTitle className="text-sm font-medium">Resolved</CardTitle>
-            </CardHeader>
-              <div className="text-3xl font
-            </Car
         </div>
-        <div className="grid grid-col
-            <CardHeader>
-                <CardTitle>Inquiries</CardTitle>
-              </div>
-                <Button v
-                </Button>
-            </CardHeader>
-              <ScrollArea clas
-                  {sortedInquiries.length === 0 ? (
-                      <ChatCircle className="w-12 h-12 text-muted-foreground mb-3" weight="duotone
-                    </div>
-                    sortedInquiries.map((inquiry
-                        key={inquiry.id}
-                        className={`p-4 rounded-lg border cu
-                        }`}
-                        <div className="flex items
-                            {getCategoryIcon(inquiry.category)}
-                          </div>
-                        </div>
-                          {getPatientName(inquiry.pa
-                        <div className="flex items-center just
-                          <span className="text-xs tex
-                          </span>
-                      </div
-                  )}
-              </ScrollArea>
-          </Card>
+      </header>
 
-              <div className="flex items-center justify-be
-                  {selectedInquiry && (
-                      {getPatientName(selectedInquiry.patientId)
-                  )}
-                {selectedInquiry && (
-                    <Select value={select
-                        <SelectValue />
-                      <SelectContent>
-                        <SelectItem value="inProgress">In Progress</Select
-                        <SelectItem value="resolved">Resolved</SelectItem>
-                    </Select>
-                )}
-            </CardHeader>
-              {!selectedInquiry
-                  <ChatCir
-
-                <div className="space-y-4">
-                    <p className="text-sm font-medium mb-1">Orig
-                  </div>
-                  <ScrollArea className="h-[400px] bo
-                      <p className="text-
-                      <div className="sp
-                          <div
-                            className={`p-3 rounded-lg ${
-                            }`}
-                            <div className="flex items-center gap-2 
-                              {msg.isInt
-                               
-                          
-                        
-
-                  </ScrollArea>
-                  <div className="space-y-2">
-                      plac
-                      onChange={(e
-                    />
-                      <label className="flex items-center gap-2 text-sm">
-                          type="checkbox"
-                      
-                        
-
-                        <PaperPlaneTilt class
-                      </Button>
-                  </div>
-              )}
-          </Card>
-      </div>
-  )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      <div className="container mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="hover:border-blue-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('new')}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">New</CardTitle>
+              <Clock className="h-4 w-4 text-blue-600" weight="duotone" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stats.new}</div>
@@ -498,5 +359,5 @@ import {
         </div>
       </div>
     </div>
-  )
+  );
 }
