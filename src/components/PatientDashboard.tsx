@@ -143,52 +143,30 @@ export function PatientDashboard() {
                     onClick={() => setSelectedCase(caseItem)}
                   >
                     <CardContent className="p-5">
-                      <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="text-xs">
-                              {caseTypeLabels[caseItem.caseType]}
+                            <Badge variant="outl
                             </Badge>
-                            <Badge variant="secondary" className="text-xs">
                               {urgencyLabels[caseItem.urgency]}
-                            </Badge>
                           </div>
-                          <p className="text-sm font-medium line-clamp-2 mb-1">
-                            {caseItem.subject}
+                            {caseIte
+                          <p className="text-xs text-muted-foreground mt-2"
                           </p>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {format(new Date(caseItem.createdAt), 'MMM d, yyyy')}
-                          </p>
-                        </div>
-                        <Badge className={statusColors[caseItem.status]}>
-                          {caseItem.status === 'resolved' && <CheckCircle className="w-3 h-3 mr-1" weight="fill" />}
-                          {statusLabels[caseItem.status]}
-                        </Badge>
+                        <Badge class
+                          {statu
                       </div>
-                    </CardContent>
                   </Card>
-                </motion.div>
               ))
-            )}
           </CardContent>
-        </Card>
 
-        <Card>
           <CardHeader>
-            <CardTitle>Upcoming Appointments</CardTitle>
-            <CardDescription>Your scheduled sessions</CardDescription>
-          </CardHeader>
+            <CardDescription>Y
           <CardContent className="space-y-3">
-            {myAppointments.length === 0 ? (
               <div className="text-center py-12">
-                <CalendarBlank className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duotone" />
-                <p className="text-muted-foreground">No upcoming appointments</p>
-              </div>
+                <p className="text-muted-foreground">No u
             ) : (
-              myAppointments.slice(0, 5).map((appointment) => (
-                <Card key={appointment.id} className="hover:border-primary/30 transition-colors">
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between gap-4">
+                <Card key={a
+                    </CardContent>ssName="p-5">
+                  </Card>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <CalendarBlank className="w-4 h-4 text-primary" weight="duotone" />
@@ -228,3 +206,22 @@ export function PatientDashboard() {
 
 
 
+                            <Badge variant="outline" className="text-xs">                              {caseTypeLabels[caseItem.caseType]}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              {urgencyLabels[caseItem.urgency]}
+                            </Badge>
+                          </div>
+                          <p className="text-sm font-medium line-clamp-2 mb-1">
+                            {caseItem.subject}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {format(new Date(caseItem.createdAt), 'MMM d, yyyy')}
+                          </p>
+                        </div>
+                        <Badge className={statusColors[caseItem.status]}>
+                          {caseItem.status === 'resolved' && <CheckCircle className="w-3 h-3 mr-1" weight="fill" />}
+                          {statusLabels[caseItem.status]}
+                        </Badge>
+                      </div>
+                    </CardContent>
