@@ -1,6 +1,6 @@
-import { Medication, DrugInteraction } from '@/types/prescription'
+import { Medication, DrugInteraction, FormularyDrug } from '@/types/prescription'
 
-export const MEDICATIONS: Medication[] = [
+export let MEDICATIONS: Medication[] = [
   {
     id: 'med-001',
     name: 'Lisinopril',
@@ -245,4 +245,36 @@ export function checkInteractions(medicationId: string, activePrescriptions: str
     const severityOrder = { severe: 3, moderate: 2, minor: 1 }
     return severityOrder[b.severity] - severityOrder[a.severity]
   })
+}
+
+export function addFormularyDrugs(formularyDrugs: FormularyDrug[]): void {
+  let currentMaxId = MEDICATIONS.length
+  
+  formularyDrugs.forEach(drug => {
+    const existingDrug = MEDICATIONS.find(
+      m => m.name.toLowerCase() === drug.brandName.toLowerCase() ||
+           m.genericName.toLowerCase() === drug.genericName.toLowerCase()
+    )
+    
+    if (!existingDrug) {
+      currentMaxId++
+      const newMedication: Medication = {
+        id: `med-${String(currentMaxId).padStart(3, '0')}`,
+        name: drug.brandName,
+        genericName: drug.genericName,
+        drugClass: drug.drugClass,
+        commonDosages: drug.commonDosages,
+        interactions: [],
+        contraindications: drug.contraindications,
+        ndc: drug.ndc,
+        manufacturer: drug.manufacturer,
+        formularyTier: drug.tier
+      }
+      MEDICATIONS.push(newMedication)
+    }
+  })
+}
+
+export function getMedicationCount(): number {
+  return MEDICATIONS.length
 }

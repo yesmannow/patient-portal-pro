@@ -1,19 +1,24 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { Patient, Prescription } from '@/types/prescription'
+import { Patient, Prescription, FormularyDrug } from '@/types/prescription'
 import { PatientSelector } from '@/components/prescription/PatientSelector'
 import { PrescriptionList } from '@/components/prescription/PrescriptionList'
 import { NewPrescriptionDialog } from '@/components/prescription/NewPrescriptionDialog'
 import { AllergyManager } from '@/components/prescription/AllergyManager'
+import { FormularyImport } from '@/components/prescription/FormularyImport'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
-import { Plus, Pills } from '@phosphor-icons/react'
+import { Plus, Pills, Database } from '@phosphor-icons/react'
+import { addFormularyDrugs, getMedicationCount } from '@/lib/medication-database'
+import { toast } from 'sonner'
 
 export default function App() {
   const [patients] = useKV<Patient[]>('patients', [])
   const [prescriptions, setPrescriptions] = useKV<Prescription[]>('prescriptions', [])
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null)
   const [isNewPrescriptionOpen, setIsNewPrescriptionOpen] = useState(false)
+  const [isFormularyImportOpen, setIsFormularyImportOpen] = useState(false)
+  const [medicationCount, setMedicationCount] = useState(getMedicationCount())
 
   const selectedPatient = patients.find(p => p.id === selectedPatientId)
   const patientPrescriptions = prescriptions.filter(p => p.patientId === selectedPatientId)
@@ -34,20 +39,37 @@ export default function App() {
     setIsNewPrescriptionOpen(false)
   }
 
+  const handleFormularyImport = (drugs: FormularyDrug[]) => {
+    addFormularyDrugs(drugs)
+    setMedicationCount(getMedicationCount())
+    setIsFormularyImportOpen(false)
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-6 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <Pills size={24} weight="bold" className="text-primary-foreground" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+                <Pills size={24} weight="bold" className="text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight text-foreground" style={{ letterSpacing: '-0.02em' }}>
+                  MedScript
+                </h1>
+                <p className="text-sm text-muted-foreground">Prescription Manager</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-foreground" style={{ letterSpacing: '-0.02em' }}>
-                MedScript
-              </h1>
-              <p className="text-sm text-muted-foreground">Prescription Manager</p>
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => setIsFormularyImportOpen(true)}
+              className="gap-2"
+            >
+              <Database size={20} weight="duotone" />
+              Import Formulary
+              <span className="text-xs text-muted-foreground ml-1">({medicationCount} drugs)</span>
+            </Button>
           </div>
         </div>
       </header>
@@ -109,6 +131,12 @@ export default function App() {
           onAddPrescription={handleAddPrescription}
         />
       )}
+
+      <FormularyImport
+        open={isFormularyImportOpen}
+        onOpenChange={setIsFormularyImportOpen}
+        onImport={handleFormularyImport}
+      />
 
       <Toaster />
     </div>

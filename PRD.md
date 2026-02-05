@@ -47,6 +47,13 @@ This is a clinical decision support tool with multiple interconnected features: 
 - **Progression**: Display active prescriptions → Select prescription → Discontinue or modify → Update status → Refresh interaction checks
 - **Success criteria**: Clear distinction between active/discontinued medications, discontinuation persists across sessions
 
+### Drug Formulary Import
+- **Functionality**: Import medications from external pharmacy databases (Medicare Part D, Express Scripts, CVS Caremark)
+- **Purpose**: Expand medication database with comprehensive formulary data including tier classification and NDC codes
+- **Trigger**: Provider clicks "Import Formulary" button in header
+- **Progression**: View available databases → Select database → Preview medications → Select drugs to import → Confirm import → Add to medication database
+- **Success criteria**: Imported medications immediately available for prescribing, duplicate prevention, tier and manufacturer data preserved
+
 ## Edge Case Handling
 
 - **No Patient Selected** - Disable prescription creation, show prompt to select patient first
@@ -56,6 +63,9 @@ This is a clinical decision support tool with multiple interconnected features: 
 - **No Documented Allergies** - Display notice prompting provider to confirm no known allergies
 - **Duplicate Prescription** - Warn if prescribing medication already active for patient
 - **Rapid Successive Searches** - Debounce search input to prevent excessive API-like calls
+- **Duplicate Formulary Import** - Prevent importing medications that already exist in database, check by brand/generic name
+- **Empty Formulary Selection** - Disable import button if no medications selected from preview
+- **Large Formulary Import** - Show progress indicator during import, simulate async processing
 
 ## Design Direction
 
@@ -103,18 +113,20 @@ Animations should be purposeful and restrained, focusing on safety-critical feed
 ## Component Selection
 
 - **Components**:
-  - Dialog - For prescription creation modal workflow
+  - Dialog - For prescription creation modal workflow and formulary import
   - Command - For medication search with keyboard navigation
-  - Card - For prescription items, allergy cards, warning panels
+  - Card - For prescription items, allergy cards, warning panels, formulary database selection
   - Alert - For warning banners (with custom styling for severity levels)
-  - Badge - For severity indicators, medication status tags
+  - Badge - For severity indicators, medication status tags, formulary tier classification
   - Table - For prescription history listing
   - Input - For dosage, frequency, duration fields
   - Textarea - For prescription instructions and override justifications
   - Button - Primary (prescribe), Secondary (cancel), Destructive (discontinue)
   - Separator - To divide sections clearly
   - Accordion - For collapsible interaction details
-  - ScrollArea - For long medication lists
+  - ScrollArea - For long medication lists and formulary preview
+  - Progress - For formulary import progress indicator
+  - Checkbox - For selecting medications during formulary import
   
 - **Customizations**:
   - Custom warning Alert variants with severity-based colors (minor/moderate/severe)
@@ -136,6 +148,10 @@ Animations should be purposeful and restrained, focusing on safety-critical feed
   - Plus, X (add/remove)
   - ClockCounterClockwise (history)
   - User (patient selection)
+  - Database (formulary import)
+  - Download (import action)
+  - Package (medication count)
+  - ArrowRight (navigation)
   
 - **Spacing**:
   - Cards: p-6 padding for content breathing room

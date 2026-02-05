@@ -2,25 +2,27 @@ export interface Patient {
   id: string
   name: string
   dateOfBirth: string
+  allergies: Allergy[]
 }
-e
 
-  severity: 'mild' | 'mode
+export interface Allergy {
+  id: string
+  allergen: string
+  reaction: string
+  severity: 'mild' | 'moderate' | 'severe'
 }
-export interface M
+
+export interface Medication {
+  id: string
   name: string
-  drugClass: string
-  interactions: string
-}
-
-  patientId: string
-  dosage: st
-  duration: st
   genericName: string
   drugClass: string
   commonDosages: string[]
   interactions: string[]
   contraindications: string[]
+  ndc?: string
+  manufacturer?: string
+  formularyTier?: string
 }
 
 export interface Prescription {
@@ -51,24 +53,24 @@ export interface AllergyWarning {
   reaction: string
   severity: 'mild' | 'moderate' | 'severe'
 }
-  instructions: string
-  prescribedDate: string
-  status: 'active' | 'discontinued' | 'completed'
-  discontinuedDate?: string
-  overrideJustification?: string
+
+export interface FormularyDrug {
+  ndc: string
+  brandName: string
+  genericName: string
+  manufacturer: string
+  drugClass: string
+  strength: string
+  dosageForm: string
+  tier: string
+  commonDosages: string[]
+  contraindications: string[]
 }
 
-export interface DrugInteraction {
-  severity: 'minor' | 'moderate' | 'severe'
-  drug1: string
-  drug2: string
+export interface FormularyDatabase {
+  id: string
+  name: string
   description: string
-  recommendation: string
-}
-
-export interface AllergyWarning {
-  allergen: string
-  medication: string
-  reaction: string
-  severity: 'mild' | 'moderate' | 'severe'
+  drugCount: number
+  lastUpdated: string
 }
