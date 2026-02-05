@@ -1,70 +1,70 @@
 import { useKV } from '@github/spark/hooks'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Users, TrendUp, Funnel, Star, Phone } from '@phosphor-icons/react'
 import { Patient } from '@/lib/types'
-
 interface FormSubmission {
-  id: string
   patientId: string
-  formType: string
-  submittedAt: string
-}
 
-export function MarketingDashboard() {
-  const [patients] = useKV<Patient[]>('patients', [])
-  const [formSubmissions] = useKV<FormSubmission[]>('form-submissions', [])
 
-  const newPatients = (patients ?? [])
-    .filter(p => p.patientStatus === 'new')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  const [pat
 
-  const activePatients = (patients ?? []).filter(p => p.patientStatus === 'active')
+    .filter(p => p
 
-  const conversionRate = (patients ?? []).length > 0
-    ? ((activePatients.length / (patients ?? []).length) * 100).toFixed(1)
-    : '0'
 
-  const patientsBySource = (patients ?? []).reduce((acc, patient) => {
-    acc[patient.onboardingSource] = (acc[patient.onboardingSource] || 0) + 1
-    return acc
+
+
+    acc[patient.onboardingSource] = (acc[patient.onbo
   }, {} as Record<string, number>)
 
-  const recentIntakeSubmissions = (formSubmissions ?? [])
-    .filter(sub => sub.formType === 'intake')
     .slice(0, 10)
-
-  const sourceIcons: Record<string, typeof Users> = {
-    website: Users,
+  const sourceIcons: Record<string, typeof 
     phone: Phone,
-    referral: Users,
-    intakeForm: Funnel,
-  }
 
-  const sourceLabels: Record<string, string> = {
-    website: 'Website',
-    phone: 'Phone Call',
+
+
     referral: 'Referral',
-    intakeForm: 'Online Form',
   }
+  return 
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Marketing Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Lead funnel and patient acquisition tracking</p>
-      </div>
+        <p className="text-muted-foreground mt-1">Lead funnel and pati
 
-      <div className="grid gap-6 md:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Leads</CardTitle>
-            <Users className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{newPatients.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <CardTitle className="
+
+            <div className="text-2xl font-bold">{newPatie
               Awaiting conversion
+          </CardC
+
+          <CardHeader className="flex flex-row items-
+            <Star c
+          <CardCo
+            <p class
+            </p>
+   
+
+            <CardTitle className="text-sm font-m
+          </CardHeader>
+            <div classNa
+              Lead to act
+          </CardContent>
+
+
+          
+          <CardContent>
+           
+            </p>
+        </Card>
+
+
+            <CardTitle className="flex items-cent
+              
+            <CardDescription>Patient acquisition channels</CardDescription>
+          <CardContent>
+              {Object.entries(patientsBySource).map(([source, c
+                const p
+                return 
+                    <div className="flex items-center gap-3">
+                        <Icon className="w-5 h-5 text-primary"
+                      <div>
             </p>
           </CardContent>
         </Card>
@@ -135,13 +135,13 @@ export function MarketingDashboard() {
                         <p className="text-sm text-muted-foreground">{percentage}% of total</p>
                       </div>
                     </div>
-                    <div className="text-right">
+
                       <p className="text-2xl font-bold">{count}</p>
                       <p className="text-xs text-muted-foreground">patients</p>
                     </div>
-                  </div>
+
                 )
-              })}
+
             </div>
           </CardContent>
         </Card>
@@ -189,5 +189,5 @@ export function MarketingDashboard() {
         </Card>
       </div>
     </div>
-  )
+
 }
