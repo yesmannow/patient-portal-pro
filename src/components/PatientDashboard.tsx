@@ -1,69 +1,69 @@
-import { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { useAuth } from '@/lib/auth-context'
-import { useKV } from '@github/spark/hooks'
-import { Case, Appointment, Patient } from '@/lib/types'
-import { CalendarBlank, ChatCircle, Plus, Clock, CheckCircle } from '@phosphor-icons/react'
-import { format } from 'date-fns'
-import { motion } from 'framer-motion'
-import { NewCaseDialog } from './NewCaseDialog'
-import { CaseDetailDialog } from './CaseDetailDialog'
+import { useState } from 'react';
+import { useKV } from '@github/spark/hooks';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Case, Appointment, Patient } from '@/lib/types';
+import { useAuth } from '@/lib/auth-context';
+import { CalendarBlank, ChatCircle, Plus, Clock, CheckCircle } from '@phosphor-icons/react';
+import { NewCaseDialog } from './NewCaseDialog';
+import { CaseDetailDialog } from './CaseDetailDialog';
+import { format } from 'date-fns';
+import { motion } from 'framer-motion';
 
-const statusColors = {
-  'open': 'bg-blue-500 text-white',
-  'awaitingPatient': 'bg-amber-500 text-white',
-  'awaitingProvider': 'bg-purple-500 text-white',
-  'resolved': 'bg-green-600 text-white'
-}
+const statusColors: Record<string, string> = {
+  open: 'bg-blue-500 text-white',
+  awaitingPatient: 'bg-amber-500 text-white',
+  awaitingProvider: 'bg-purple-500 text-white',
+  resolved: 'bg-green-600 text-white',
+};
 
-const statusLabels = {
-  'open': 'Open',
-  'awaitingPatient': 'Awaiting Patient',
-  'awaitingProvider': 'Awaiting Provider',
-  'resolved': 'Resolved'
-}
+const statusLabels: Record<string, string> = {
+  open: 'Open',
+  awaitingPatient: 'Awaiting Patient',
+  awaitingProvider: 'Awaiting Provider',
+  resolved: 'Resolved',
+};
 
-const urgencyColors = {
+const urgencyColors: Record<string, string> = {
   urgent: 'border-l-red-600',
   timeSensitive: 'border-l-amber-500',
   routine: 'border-l-blue-500',
-}
+};
 
-const urgencyLabels = {
+const urgencyLabels: Record<string, string> = {
   urgent: 'Urgent',
-  timeSensitive: 'Time Sensitive',
+  timeSensitive: 'Time-Sensitive',
   routine: 'Routine',
-}
+};
 
-const caseTypeLabels = {
+const caseTypeLabels: Record<string, string> = {
   question: 'Question',
-  followUp: 'Follow-up',
+  followUp: 'Follow-Up',
   billing: 'Billing',
   clinicalConcern: 'Clinical Concern',
   admin: 'Administrative',
-}
+};
 
 export function PatientDashboard() {
-  const { currentUser } = useAuth()
-  const [patients] = useKV<Patient[]>('patients', [])
-  const [cases] = useKV<Case[]>('cases', [])
-  const [appointments] = useKV<Appointment[]>('appointments', [])
-  const [newCaseOpen, setNewCaseOpen] = useState(false)
-  const [selectedCase, setSelectedCase] = useState<Case | null>(null)
+  const { currentUser } = useAuth();
+  const [patients] = useKV<Patient[]>('patients', []);
+  const [cases] = useKV<Case[]>('cases', []);
+  const [appointments] = useKV<Appointment[]>('appointments', []);
+  const [newCaseOpen, setNewCaseOpen] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
 
-  const currentPatient = patients?.find(p => p.email === currentUser?.email)
-  const myCases = (cases || []).filter(c => c.patientId === currentPatient?.id).sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
-  const activeCases = myCases.filter(c => c.status !== 'resolved')
-  const myAppointments = (appointments || [])
-    .filter(a => a.patientId === currentPatient?.id && a.status === 'scheduled')
-    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
+  const currentPatient = patients.find((p) => p.email === currentUser?.email);
+  const myCases = cases
+    .filter((c) => c.patientId === currentPatient?.id)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const activeCases = myCases.filter((c) => c.status !== 'resolved');
+  const myAppointments = appointments
+    .filter((a) => a.patientId === currentPatient?.id && a.status === 'scheduled')
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
@@ -135,12 +135,10 @@ export function PatientDashboard() {
               myCases.slice(0, 5).map((caseItem) => (
                 <motion.div
                   key={caseItem.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
                   whileHover={{ scale: 1.01 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.15 }}
                 >
-                  <Card 
+                  <Card
                     className={`cursor-pointer border-l-4 ${urgencyColors[caseItem.urgency]} hover:border-primary/30 hover:shadow-md transition-all`}
                     onClick={() => setSelectedCase(caseItem)}
                   >
@@ -188,11 +186,11 @@ export function PatientDashboard() {
                 <p className="text-muted-foreground">No upcoming appointments</p>
               </div>
             ) : (
-              myAppointments.map((appointment) => (
+              myAppointments.slice(0, 5).map((appointment) => (
                 <Card key={appointment.id} className="hover:border-primary/30 transition-colors">
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between gap-4">
-                      <div>
+                      <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <CalendarBlank className="w-4 h-4 text-primary" weight="duotone" />
                           <p className="font-semibold">
@@ -202,6 +200,7 @@ export function PatientDashboard() {
                         <p className="text-sm text-muted-foreground mt-1">
                           {format(new Date(appointment.dateTime), 'h:mm a')} • {appointment.location}
                         </p>
+                        <p className="text-sm mt-2">{appointment.reason}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -216,14 +215,14 @@ export function PatientDashboard() {
         <>
           <NewCaseDialog open={newCaseOpen} onOpenChange={setNewCaseOpen} patientId={currentPatient.id} />
           {selectedCase && (
-            <CaseDetailDialog 
+            <CaseDetailDialog
               case={selectedCase}
-              open={!!selectedCase} 
-              onOpenChange={(open) => !open && setSelectedCase(null)} 
+              open={!!selectedCase}
+              onOpenChange={(open) => !open && setSelectedCase(null)}
             />
           )}
         </>
       )}
     </div>
-  )
-}
+  );
+}000000000
