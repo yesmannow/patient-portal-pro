@@ -102,3 +102,87 @@ export interface HealthDocument {
   description?: string
   base64Data: string
 }
+
+export type TaskStatus = 'todo' | 'inProgress' | 'done'
+
+export interface Task {
+  id: string
+  caseId?: string
+  patientId?: string
+  title: string
+  description: string
+  dueDate: string
+  assignedToProviderId: string
+  status: TaskStatus
+  createdAt: string
+  updatedAt: string
+  createdByWorkflow?: string
+}
+
+export type WorkflowEventType = 'caseCreated' | 'formSubmitted' | 'appointmentScheduled' | 'statusChanged'
+
+export interface WorkflowTemplate {
+  id: string
+  name: string
+  description: string
+  eventType: WorkflowEventType
+  active: boolean
+  taskTemplates: TaskTemplate[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TaskTemplate {
+  id: string
+  title: string
+  description: string
+  daysOffset: number
+  assignToRole?: ProviderRole
+}
+
+export type FormFieldType = 'text' | 'textarea' | 'date' | 'select' | 'boolean' | 'number'
+
+export interface FormField {
+  id: string
+  label: string
+  fieldType: FormFieldType
+  required: boolean
+  options?: string[]
+  placeholder?: string
+  mapToPatientField?: keyof Patient
+}
+
+export interface FormDefinition {
+  id: string
+  name: string
+  description: string
+  fields: FormField[]
+  createCaseOnSubmit: boolean
+  caseType?: CaseType
+  urgency?: Urgency
+  createTasksOnSubmit: boolean
+  taskTemplates?: TaskTemplate[]
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface FormSubmission {
+  id: string
+  formDefinitionId: string
+  patientId: string
+  responses: Record<string, any>
+  submittedAt: string
+  createdCaseId?: string
+  createdTaskIds?: string[]
+}
+
+export interface AnalyticsInsight {
+  id: string
+  type: 'trend' | 'alert' | 'suggestion'
+  severity: 'info' | 'warning' | 'critical'
+  title: string
+  description: string
+  actionText?: string
+  generatedAt: string
+}

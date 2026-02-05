@@ -1,183 +1,161 @@
 # Planning Guide
 
-A HIPAA-compliant medical practice patient-provider communication platform that enables secure messaging, care coordination, and clinical workflow management between healthcare providers and their patients.
+A comprehensive medical practice portal with intelligent workflow automation, structured form handling, predictive analytics, and open-source integration capabilities for patient-provider communication and care coordination.
 
 **Experience Qualities**:
-1. **Trustworthy** - Interface conveys security, professionalism, and clinical competence through clear data hierarchy and medical-grade attention to detail
-2. **Efficient** - Healthcare providers can triage urgent cases, respond to routine inquiries, and manage patient communications with minimal clicks
-3. **Clear** - Medical terminology and patient statuses are consistently presented with structured fields, eliminating ambiguity in care coordination
+1. **Efficient** - Automated workflows reduce manual tracking, allowing providers to focus on care delivery rather than administrative tasks.
+2. **Intelligent** - AI-driven insights surface patterns and suggest proactive interventions before issues escalate.
+3. **Transparent** - Patients and providers have complete visibility into tasks, cases, forms, and care progress with clear status indicators.
 
 **Complexity Level**: Complex Application (advanced functionality, likely with multiple views)
-This application requires role-based access control (patient vs. provider with different specialties), structured medical data models with immutable enums, clinical workflow management, secure messaging with internal notes, appointment coordination, and real-time status updates across multiple care team members.
+This platform includes role-based multi-view dashboards, workflow automation engine, custom form builder, analytics with AI insights, structured task management, and integration points for external systems—all requiring sophisticated state management and coordinated data flows.
 
 ## Essential Features
 
-### Patient Authentication & Profile Management
-- **Functionality**: Secure login for patients; profile displays firstName, lastName, dateOfBirth, contact information, preferredContactMethod, conditionType, patientStatus, and onboardingSource; tabbed interface for profile information and health document management
-- **Purpose**: Establishes patient identity, tracks care journey, enables targeted communication based on condition type and status, provides centralized storage for medical documents
-- **Trigger**: Patient navigates to portal URL or clicks login link; clicks profile tab in navigation
-- **Progression**: Landing page → Login form → Patient Dashboard → Profile tab → View personal information or Documents tab → Upload/manage medical files
-- **Success criteria**: Patients can log in, view their structured profile with all enum fields displayed clearly; upload documents up to 10MB categorized by type (labResults|imaging|insurance|referral|other); download and delete their documents; documents persist and are associated with patient ID
+### Workflow & Task Automation Engine
+- **Functionality**: Auto-generates task sequences from events (new cases, form submissions, appointment changes, status transitions) based on configurable templates
+- **Purpose**: Eliminates manual task creation and ensures consistent follow-through on care protocols
+- **Trigger**: Event listeners on case creation, form submission, appointment scheduling, status changes
+- **Progression**: Event occurs → Workflow engine matches template → Tasks created with calculated due dates → Provider receives notification → Provider completes/reassigns tasks → Status updates
+- **Success criteria**: Tasks appear on provider dashboard within seconds of triggering event; overdue tasks flagged; completion rates tracked
 
-### Provider Authentication & Availability Management
-- **Functionality**: Secure login for providers; profile displays name, role (physician|therapist|nurse|admin), specialty, and availabilityStatus
-- **Purpose**: Establishes provider identity and credentials, enables intelligent case routing based on specialty and availability
-- **Trigger**: Provider navigates to portal URL
-- **Progression**: Landing page → Login form → Provider Dashboard with case queue and patient overview
-- **Success criteria**: Providers can log in, system displays role and specialty badges, availability status updates persist
+### Form Builder & Structured Intake
+- **Functionality**: Drag-and-drop interface for creating custom intake forms with typed fields; patient-facing form completion; automatic mapping to patient records and case creation
+- **Purpose**: Standardizes data collection across different care scenarios while remaining flexible for clinic-specific needs
+- **Trigger**: Admin/provider creates form template; patient assigned form; patient completes and submits
+- **Progression**: Provider builds form definition → Saves template → Assigns to patient → Patient receives notification → Patient completes form → Data maps to patient record → Optional case/tasks created → Provider reviews submission
+- **Success criteria**: Forms save and load reliably; submitted data correctly populates patient fields; conditional case/task creation works as configured
 
-### Clinical Case Management System
-- **Functionality**: Patients create cases with caseType (question|followUp|billing|clinicalConcern|admin), urgency (routine|timeSensitive|urgent), subject, and description; providers triage by urgency and type, assign cases, update status through workflow (open → awaitingPatient/awaitingProvider → resolved)
-- **Purpose**: Structures patient communications into trackable clinical workflows with clear urgency indicators for care team prioritization
-- **Trigger**: Patient clicks "New Case" or provider opens case queue filtered by urgency or caseType
-- **Progression**: New case form → Select caseType and urgency (required enums) → Enter subject/description → Submit → Appears in provider queue sorted by urgency → Provider reviews → Status progresses through workflow → Resolution
-- **Success criteria**: Cases display with caseType badges, urgency color-coding (urgent=red, timeSensitive=amber, routine=blue); providers can filter by caseType and urgency; status transitions follow clinical workflow; no free-text status values
+### Advanced Analytics & Predictive Insights
+- **Functionality**: Visual charts showing case volume trends, task completion rates, bottleneck identification; AI-generated insights highlighting patterns and recommending actions
+- **Purpose**: Transforms raw operational data into actionable intelligence for improving care delivery and resource allocation
+- **Trigger**: Provider navigates to analytics dashboard; AI engine runs periodic analysis on aggregated data
+- **Progression**: Provider opens analytics → Charts render with real-time data → Trend lines show patterns → AI insight cards display → Provider clicks insight for details → Provider takes suggested action
+- **Success criteria**: Charts update dynamically; insights are contextually relevant; suggestions lead to measurable improvements in metrics
 
-### Secure Threaded Messaging
-- **Functionality**: Each case contains a message thread; patients and providers exchange messages; providers add internal notes (visibility: internal) invisible to patients
-- **Purpose**: HIPAA-compliant communication with clinical documentation separated from patient-facing messages
-- **Trigger**: User opens a case from dashboard
-- **Progression**: Case detail view → Message thread display (patient messages vs. internal notes visually distinct) → Compose message → Select visibility (provider only) → Send → Message appears with timestamp and sender badge
-- **Success criteria**: Messages display chronologically; internal notes have distinct styling and "Internal Note" badge; patient users never see internal visibility messages; attachments supported
+### Task Board & Management
+- **Functionality**: Kanban-style board displaying tasks grouped by status and due date; filtering, assignment, and status updates
+- **Purpose**: Centralizes provider workload visibility and enables efficient task triaging
+- **Trigger**: Provider navigates to task board; tasks auto-created by workflow engine
+- **Progression**: Provider views task board → Filters by patient/urgency/due date → Selects task → Reviews details → Marks complete or reassigns → Task updates → Metrics refresh
+- **Success criteria**: Tasks sort correctly by due date; overdue tasks visually flagged; status changes persist; metrics reflect completion
 
-### Appointment Scheduling & Coordination
-- **Functionality**: View upcoming appointments by patient; schedule appointments with specific providers based on their role and specialty
-- **Purpose**: Coordinates clinical visits and follow-up care
-- **Trigger**: Patient clicks "Schedule Appointment" or views appointment calendar
-- **Progression**: Calendar view → Select date/time → Choose provider (filtered by specialty) → Add clinical reason → Confirm → Appointment persists → Appears on both patient and provider dashboards
-- **Success criteria**: Appointments display with provider specialty and role; both parties can view; status (scheduled|completed|cancelled) updates correctly
+### Open-Source Integration Hooks
+- **Functionality**: FHIR-compliant API endpoints for importing/exporting patient data, appointments, and observations; placeholder functions for OpenEMR integration
+- **Purpose**: Enables future interoperability with EMR systems without vendor lock-in
+- **Trigger**: External system calls FHIR endpoints; manual data sync initiated by admin
+- **Progression**: External request → Validate FHIR format → Map to internal data model → Persist → Return confirmation → Trigger workflows if needed
+- **Success criteria**: FHIR resources parse correctly; data maintains integrity across systems; bi-directional sync works without data loss
 
-### Clinical Analytics Dashboard (Provider)
-- **Functionality**: Display key practice metrics: case volume by caseType, urgency distribution, average response time by urgency level, resolution rate, patient status breakdown
-- **Purpose**: Data-driven insights for practice management and clinical quality improvement
-- **Trigger**: Provider navigates to analytics tab
-- **Progression**: Analytics page loads → Charts render showing caseType distribution, urgency trends, response time by urgency → Filter by date range → Export data
-- **Success criteria**: All metrics calculate from structured enum fields; no reliance on free-text; visualizations show clinical workflow patterns clearly
+### Telehealth & Communication Enhancements
+- **Functionality**: WebRTC video consultation component stub; SMS/email reminder system placeholders
+- **Purpose**: Supports virtual care delivery and proactive patient engagement
+- **Trigger**: Provider schedules video visit; workflow triggers reminder for upcoming appointment/overdue task
+- **Progression**: Video: Provider initiates → Patient receives link → Both join session → Video call completes → Notes saved to case. Reminders: Workflow trigger → System sends notification → Patient receives → Patient takes action
+- **Success criteria**: Video component renders correctly (feature-flagged); reminder functions execute at correct times; notifications include relevant context
 
 ## Edge Case Handling
 
-- **Unauthenticated access attempts**: Redirect to login; preserve intended destination for post-login redirect
-- **Empty patient queue**: Show helpful onboarding message with clinical context (e.g., "No active cases – your care team will respond within 24 hours")
-- **Empty document library**: Show helpful upload prompt with clear categories and file requirements
-- **Large file uploads**: Prevent files over 10MB; show clear error message with file size limit
-- **Unsupported file types**: Accept common medical document formats (PDF, images, Word docs); reject others with helpful message
-- **Long message threads**: Auto-collapse older messages beyond 10; display expand control
-- **Missing patient data**: Required fields (firstName, lastName, dateOfBirth, preferredContactMethod, conditionType) must be captured; gracefully prompt for completion
-- **Concurrent case updates**: Last-write-wins for status changes; display warning if case modified by another provider
-- **Network failures**: Show error toast; retry failed operations; preserve unsent message drafts in component state
-- **Invalid appointment times**: Prevent booking in past; check provider availability; show scheduling conflicts
-- **Urgent case notification**: Visual indicator (red badge) on urgent cases; providers see urgent cases first in queue
+- **Missing Patient Data**: Form submissions and task creation gracefully handle incomplete patient records by creating placeholder entries and flagging for manual review.
+- **Conflicting Task Assignments**: When multiple workflows attempt to create duplicate tasks, the engine deduplicates by task title + patient + due date to prevent redundancy.
+- **Overdue Task Accumulation**: Tasks beyond 7 days overdue automatically escalate to practice admin with summary report.
+- **Form Schema Changes**: Existing form submissions remain viewable even if the form definition is later modified; historical data preserved.
+- **Provider Unavailability**: Task reassignment mechanism allows delegating tasks when assigned provider is marked away/offline.
+- **Large Data Volumes**: Analytics dashboard limits chart data to last 90 days by default with option to expand; prevents rendering performance issues.
+- **Network Interruptions**: Form submissions cache locally and retry automatically; users notified of pending submissions.
 
 ## Design Direction
 
-The design should evoke **clinical trust, clarity, and calm efficiency**. Patients should feel confident their health concerns are being handled securely and professionally. Providers should experience a streamlined clinical workflow with clear urgency indicators and structured data presentation. The interface reduces cognitive load through excellent medical information hierarchy, generous whitespace, and purposeful use of color to indicate clinical urgency and case status.
+The interface should evoke **clinical precision, calm efficiency, and trust**. Visual design communicates medical professionalism through clean layouts, structured information hierarchy, and purposeful use of color to signal urgency without creating anxiety. The experience feels like a thoughtfully organized medical practice—organized, attentive, and human-centered.
 
 ## Color Selection
 
-A professional medical palette anchored in calming blues and clinical whites, with clear urgency indicators.
+Soft clinical blues and greens create a calming medical environment, while warm accents provide approachable human touch. Urgency levels use universally understood traffic-light semantics.
 
-- **Primary Color**: Medical Blue `oklch(0.50 0.12 230)` – Conveys trust, clinical professionalism, and calm; used for primary actions and provider elements
+- **Primary Color**: Deep Clinical Blue `oklch(0.50 0.12 230)` - Conveys medical professionalism, trustworthiness, and calm authority. Used for primary actions and navigation.
 - **Secondary Colors**: 
-  - Clinical Slate `oklch(0.40 0.01 240)` for secondary UI elements and provider notes
-  - Soft White `oklch(0.98 0.005 240)` for card backgrounds and clean clinical aesthetic
-- **Accent Color**: Urgent Red `oklch(0.60 0.20 25)` – Clear, medical-appropriate indicator for urgent cases and critical status
-- **Foreground/Background Pairings**:
-  - Primary Blue `oklch(0.50 0.12 230)`: White text `oklch(1 0 0)` - Ratio 7.1:1 ✓
-  - Urgent Red `oklch(0.60 0.20 25)`: White text `oklch(1 0 0)` - Ratio 5.8:1 ✓
-  - Background White `oklch(0.98 0.005 240)`: Dark text `oklch(0.25 0.015 240)` - Ratio 13.2:1 ✓
-  - Muted backgrounds `oklch(0.94 0.005 240)`: Mid-tone text `oklch(0.50 0.02 240)` - Ratio 6.2:1 ✓
+  - Soft Slate `oklch(0.94 0.005 240)` for subtle backgrounds and secondary UI elements
+  - Muted Purple `oklch(0.60 0.15 290)` for provider-specific features and workflow elements
+- **Accent Color**: Warm Coral `oklch(0.60 0.20 25)` - Draws attention to critical actions and important notifications. White text `oklch(1 0 0)` - Ratio 5.2:1 ✓
+- **Foreground/Background Pairings**: 
+  - Background Light Blue-Gray `oklch(0.98 0.005 240)`: Dark Text `oklch(0.25 0.015 240)` - Ratio 14.8:1 ✓
+  - Card White `oklch(0.99 0.002 240)`: Dark Text `oklch(0.25 0.015 240)` - Ratio 15.2:1 ✓
+  - Primary Blue `oklch(0.50 0.12 230)`: White `oklch(1 0 0)` - Ratio 6.8:1 ✓
+- **Urgency Indicators**:
+  - Urgent: Red `oklch(0.55 0.22 25)` with border accents
+  - Time-Sensitive: Amber `oklch(0.70 0.15 70)` for moderate priority
+  - Routine: Blue `oklch(0.60 0.12 230)` for standard workflow
 
 ## Font Selection
 
-Typography should convey medical professionalism with excellent readability for clinical documentation.
+Typography should balance medical authority (clear, structured) with human approachability (warm, accessible). Instrument Sans provides geometric precision for UI elements while Inter ensures excellent readability for body content.
 
-- **Primary**: **Instrument Sans** for UI elements, headings, and clinical labels – modern, professional, highly legible
-- **Secondary**: **Inter** for body text, message threads, and patient documentation – optimized for extended reading of medical content
-
-**Typographic Hierarchy**:
-- H1 (Page Titles): Instrument Sans Semibold / 32px / -0.02em letter spacing / line-height 1.2
-- H2 (Section Headers): Instrument Sans Semibold / 24px / -0.01em / line-height 1.3
-- H3 (Card Titles): Instrument Sans Medium / 18px / normal / line-height 1.4
-- Body (Messages, Notes): Inter Regular / 15px / normal / line-height 1.6
-- Labels (Form Fields, Enums): Instrument Sans Medium / 13px / 0.01em / line-height 1.4
-- Small (Metadata, Timestamps): Inter Regular / 13px / normal / line-height 1.5
+- **Typographic Hierarchy**:
+  - H1 (Dashboard Titles): Instrument Sans Bold / 30px / -0.02em letter spacing / 1.2 line height
+  - H2 (Section Headers): Instrument Sans SemiBold / 20px / -0.01em / 1.3
+  - H3 (Card Titles): Instrument Sans Medium / 16px / normal / 1.4
+  - Body Text: Inter Regular / 14px / normal / 1.6
+  - Small Labels: Inter Medium / 12px / 0.01em / 1.4
+  - Button Text: Instrument Sans SemiBold / 14px / 0.01em / 1
 
 ## Animations
 
-Animations should **orient users during clinical workflow transitions and provide clear feedback** for status changes, never delaying critical medical information display.
+Animations reinforce the sense of precision and responsiveness expected in medical software. Micro-interactions provide immediate feedback for actions, while page transitions maintain spatial context. All animations should feel purposeful and complete within 200-350ms.
 
-- **Case status transitions**: 250ms color fade and subtle pulse on status badge when changed
-- **Urgency indicator**: Urgent cases have subtle 2s pulse animation on red border to draw provider attention
-- **Message send**: 150ms fade-in; immediate optimistic rendering for clinical responsiveness
-- **Provider availability change**: 200ms color transition on availability badge
-- **Loading states**: Skeleton shimmer for case lists; no blocking spinners for critical data
-- **Toast notifications**: Slide-in from top-right for case assignments and urgent alerts
+Key animation moments: Form field focus (subtle glow), task completion (satisfying check with fade), card hover (gentle lift), status badge transitions (smooth color morph), chart data updates (animated value changes), workflow progression (cascading task appearance).
 
 ## Component Selection
 
-**Components**: 
-- **Dialog** for new case creation, appointment booking, document upload – modal focus on structured form entry
-- **Tabs** for patient profile navigation (profile info vs. documents) – clean segmentation of related content
-- **Card** for case listings, patient profiles, document category groups – clean, bordered containers for medical information
-- **Badge** for caseType, urgency, patientStatus, providerRole, availabilityStatus, documentCategory – color-coded enum indicators
-- **Select** for all enum fields (caseType, urgency, status, providerRole, conditionType, documentCategory, etc.) – enforces structured data entry
-- **Button** variants: primary (medical blue) for main actions, secondary (outline) for cancel, destructive (red) for urgent actions and delete
-- **Input** with file type for document uploads – supports PDF, images, Word documents
-- **Textarea** for message composition, case descriptions, document notes
-- **Separator** to divide patient info sections and message threads
-- **ScrollArea** for long message threads in clinical cases
-- **Avatar** with role badges for patient and provider identity in messages
-- **Toast** (sonner) for case assignments, urgent case alerts, status confirmations, upload success/errors
-- **AlertDialog** for destructive actions like document deletion – requires confirmation
+- **Components**: 
+  - Dialog for task details, case detail, form builder configuration
+  - Card for dashboard metrics, case summaries, appointment listings, task items
+  - Tabs for switching between dashboard views (overview/analytics/tasks)
+  - Select for filtering cases/tasks by status, urgency, type
+  - Button for primary actions (new case, complete task, submit form), variants for urgency levels
+  - Badge for status indicators, urgency levels, role tags
+  - Calendar (react-day-picker) for appointment scheduling and date inputs
+  - Form components (Input, Textarea, Select, Checkbox) with react-hook-form for validation
+  - Table for analytics data, form submission history
+  - Progress bar for task completion metrics
+  - Alert for workflow notifications and AI insights
+  - Accordion for collapsible sections in form builder
+  - Avatar for provider/patient identification
+  - Separator for visual section breaks in complex forms
 
-**Customizations**:
-- **Case Card Component**: Custom card with left-border color by urgency (urgent=red 4px, timeSensitive=amber 4px, routine=blue 2px); caseType badge in header
-- **Message Bubble**: Role-based styling (patient: soft white background, provider: light blue background, internal note: yellow tint with lock icon)
-- **Urgency Indicator**: Custom component with pulsing animation for urgent cases; static for routine/timeSensitive
-- **Provider Badge**: Custom badge showing role icon + specialty text
-- **Patient Status Indicator**: Color-coded badge (new=green, active=blue, dormant=gray, discharged=slate)
+- **Customizations**: 
+  - Custom workflow visualization component showing event → task chain
+  - Drag-and-drop form field reordering using framer-motion
+  - AI insight cards with animated appearance and color-coded severity
+  - Task board with status columns using custom grid layout
+  - Chart components using recharts with clinical color palette
 
-**States**:
-- Buttons: Default (solid primary) → Hover (darker blue) → Active (pressed) → Disabled (50% opacity)
-- Case Cards: Default → Hover (border-primary, shadow) → Selected (blue background tint)
-- Status Badges: Animate on change with 250ms color transition
-- Urgency Urgent: Continuous subtle 2s pulse to maintain provider attention
+- **States**: 
+  - Buttons: Rest (solid primary), Hover (subtle shadow + slight scale), Active (inset shadow), Disabled (40% opacity + no pointer)
+  - Input fields: Default (border-input), Focus (ring-2 ring-primary), Error (ring-destructive + error text), Success (subtle green border)
+  - Task items: Todo (neutral), In Progress (blue border-left accent), Done (green check + reduced opacity), Overdue (red pulse animation)
+  - Workflow status: Active (pulsing indicator), Paused (gray), Completed (checkmark)
 
-**Icon Selection**:
-- **ChatCircle** for cases/messages
-- **CalendarBlank** for appointments
-- **FirstAidKit** for clinical concerns
-- **Question** for question caseType
-- **ClockCounterClockwise** for follow-up caseType
-- **CurrencyDollar** for billing caseType
-- **Clipboard** for admin caseType
-- **Warning** for urgent urgency
-- **Clock** for timeSensitive urgency
-- **CheckCircle** for resolved status
-- **UserCircle** for patient
-- **Stethoscope** for providers
-- **UploadSimple** for document upload action
-- **File** for generic documents
-- **Heartbeat** for lab results
-- **FileText** for imaging reports
-- **IdentificationCard** for insurance documents and profile tab
-- **ClipboardText** for referral letters
-- **Folder** / **FolderOpen** for document categories and documents tab
-- **DownloadSimple** for document download
-- **Trash** for document deletion
+- **Icon Selection**: 
+  - Phosphor Icons weight="regular" for most UI, weight="duotone" for empty states and feature illustrations, weight="fill" for active/selected states
+  - Task: CheckSquare, ListChecks
+  - Workflow: Flow, GitBranch, Robot
+  - Analytics: ChartLine, TrendUp, Lightbulb
+  - Forms: TextBox, ListPlus, SquaresFour
+  - Communication: VideoCamera, Bell, ChatCircle
+  - Medical: FirstAid, Pulse, FileText
 
-**Spacing**:
-- Container padding: `p-6` (24px) on desktop, `p-4` (16px) on mobile
-- Card internal spacing: `p-5` (20px) for clinical information cards
-- Gap between case cards: `gap-4` (16px)
-- Form field spacing: `space-y-4` (16px) for structured enum entry
-- Section margins: `mb-8` (32px) between dashboard sections
-- Message bubble spacing: `gap-3` (12px) for readability
+- **Spacing**: 
+  - Card padding: `p-6` for main content areas
+  - Section gaps: `space-y-6` for dashboard sections
+  - Grid gaps: `gap-6` for card grids, `gap-4` for form fields
+  - Button spacing: `px-4 py-2` for default, `px-6 py-3` for large
+  - Inline element gaps: `gap-2` for badges/icons, `gap-3` for button groups
 
-**Mobile**:
-- Navigation: Top medical header with patient/provider name; hamburger for secondary navigation
-- Case Cards: Full-width on mobile; reduce padding to `p-4`; urgency border remains prominent
-- Enum Badges: Maintain full size for clinical clarity; wrap if needed
-- Forms: Stack all enum selects vertically; full-width buttons
-- Message threads: Maintain role distinction; reduce avatar size to 32px
-- Touch targets: Minimum 44px for all clinical actions and case selections
+- **Mobile**: 
+  - Dashboard metric cards: 3-column grid on desktop → single column on mobile
+  - Task board: horizontal scroll on mobile with snap points for each status column
+  - Form builder: drag-and-drop disabled on mobile, replaced with reorder buttons
+  - Analytics charts: responsive aspect ratios, legends move below chart on narrow screens
+  - Navigation: hamburger menu for mobile with slide-out drawer
+  - Action buttons: fixed bottom bar on mobile for primary actions (New Case, Complete Task)
+  - Tables: horizontal scroll with sticky first column for key data

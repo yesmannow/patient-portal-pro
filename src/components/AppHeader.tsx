@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
-import { SignOut, FirstAidKit, House, User, List } from '@phosphor-icons/react'
+import { SignOut, FirstAidKit, House, User, List, FileText } from '@phosphor-icons/react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -13,8 +13,8 @@ import {
 } from '@/components/ui/sheet'
 
 interface AppHeaderProps {
-  currentView?: 'dashboard' | 'profile'
-  onNavigate?: (view: 'dashboard' | 'profile') => void
+  currentView?: 'dashboard' | 'profile' | 'forms'
+  onNavigate?: (view: 'dashboard' | 'profile' | 'forms') => void
 }
 
 export function AppHeader({ currentView = 'dashboard', onNavigate }: AppHeaderProps) {
@@ -27,7 +27,7 @@ export function AppHeader({ currentView = 'dashboard', onNavigate }: AppHeaderPr
     return email.slice(0, 2).toUpperCase()
   }
 
-  const handleMobileNavigate = (view: 'dashboard' | 'profile') => {
+  const handleMobileNavigate = (view: 'dashboard' | 'profile' | 'forms') => {
     onNavigate?.(view)
     setMobileMenuOpen(false)
   }
@@ -62,6 +62,14 @@ export function AppHeader({ currentView = 'dashboard', onNavigate }: AppHeaderPr
                 Dashboard
               </Button>
               <Button
+                variant={currentView === 'forms' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => onNavigate('forms')}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Forms
+              </Button>
+              <Button
                 variant={currentView === 'profile' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => onNavigate('profile')}
@@ -93,6 +101,14 @@ export function AppHeader({ currentView = 'dashboard', onNavigate }: AppHeaderPr
                   >
                     <House className="w-5 h-5 mr-3" />
                     Dashboard
+                  </Button>
+                  <Button
+                    variant={currentView === 'forms' ? 'secondary' : 'outline'}
+                    className="justify-start h-12"
+                    onClick={() => handleMobileNavigate('forms')}
+                  >
+                    <FileText className="w-5 h-5 mr-3" />
+                    Forms
                   </Button>
                   <Button
                     variant={currentView === 'profile' ? 'secondary' : 'outline'}
