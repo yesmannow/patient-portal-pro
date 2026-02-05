@@ -1,4 +1,4 @@
-import { WorkflowTemplate, Task, WorkflowEventType, Case, FormSubmission, Appointment, Patient, Payment, CareGap, WaitlistEntry, VitalSigns, ProblemListItem } from './types'
+import { WorkflowTemplate, Task, WorkflowEventType, Case, FormSubmission, Appointment, Patient, Payment, CareGap, WaitlistEntry, VitalSigns, ProblemListItem, PriorAuthorization } from './types'
 
 export class WorkflowEngine {
   static async processEvent(
@@ -418,10 +418,135 @@ Assessment & Plan:
   }
 }
 
-export function processNewCase(newCase: Case, providers: any[]): Task | null {
+export function processNewCase(newCase: Case, providers: any[], priorAuths?: PriorAuthorization[]): Task | null {
   if (newCase.urgency === 'urgent') {
     return WorkflowEngine.createUrgentCaseTask(newCase, providers)
   }
+
+  if (newCase.caseType === 'clinicalConcern' && priorAuths) {
+    const patientAuths = priorAuths.filter(
+      auth => auth.patientId === newCase.patientId && auth.status === 'active'
+    )
+    
+    if (patientAuths.length === 0) {
+      const now = new Date()
+      const dueDate = new Date(now)
+      dueDate.setHours(dueDate.getHours() + 48)
+
+      const billingProvider = providers.find(p => p.role === 'billing') || providers[0]
+      
+      if (billingProvider) {
+        return {
+          id: `task-auth-check-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+          caseId: newCase.id,
+          patientId: newCase.patientId,
+          title: 'Prior Authorization Check Required',
+          description: `Clinical concern case created but no active prior authorization found. Review if authorization is needed for: ${newCase.subject}`,
+          dueDate: dueDate.toISOString(),
+          assignedToProviderId: billingProvider.id,
+          status: 'todo',
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+          createdByWorkflow: 'auto-prior-auth-check',
+        }
+      }
+    }
+  }
+
   return null
+}
+
+export function checkExpiringAuthorizations(
+  authorizations: PriorAuthorization[],
+  providers: any[]
+): Task[] {
+  const now = new Date()
+  const thirtyDaysFromNow = new Date()
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+
+  const expiringTasks: Task[] = []
+  const billingProvider = providers.find(p => p.role === 'billing') || providers[0]
+
+  if (!billingProvider) return []
+
+  for (const auth of authorizations) {
+    if (auth.status === 'active') {
+      const endDate = new Date(auth.endDate)
+      
+      if (endDate <= thirtyDaysFromNow && endDate > now) {
+        const daysUntilExpiration = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        
+        expiringTasks.push({
+          id: `task-auth-expiring-${auth.id}`,
+          patientId: auth.patientId,
+          title: `Prior Authorization Expiring Soon`,
+          description: `Authorization #${auth.authNumber} for ${auth.serviceName || auth.serviceCode} expires in ${daysUntilExpiration} days. Initiate renewal process if needed.`,
+          dueDate: endDate.toISOString(),
+          assignedToProviderId: billingProvider.id,
+          status: 'todo',
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+          createdByWorkflow: 'auto-auth-expiration',
+        })
+      }
+    }
+  }
+
+  return expiringTasks
+}
+
+export function unitTracker(
+  priorAuth: PriorAuthorization,
+  unitsToSubtract: number = 1
+): PriorAuthorization {
+  const newUsedUnits = priorAuth.usedUnits + unitsToSubtract
+  const remainingUnits = priorAuth.totalUnits - newUsedUnits
+
+  let newStatus = priorAuth.status
+  if (remainingUnits <= 0 && priorAuth.status === 'active') {
+    newStatus = 'expired'
+  }
+
+  return {
+    ...priorAuth,
+    usedUnits: newUsedUnits,
+    status: newStatus,
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+export function checkLowUnitsAuthorizations(
+  authorizations: PriorAuthorization[],
+  providers: any[],
+  threshold: number = 3
+): Task[] {
+  const now = new Date()
+  const lowUnitsTasks: Task[] = []
+  const billingProvider = providers.find(p => p.role === 'billing') || providers[0]
+
+  if (!billingProvider) return []
+
+  for (const auth of authorizations) {
+    if (auth.status === 'active') {
+      const remainingUnits = auth.totalUnits - auth.usedUnits
+      
+      if (remainingUnits <= threshold && remainingUnits > 0) {
+        lowUnitsTasks.push({
+          id: `task-auth-low-units-${auth.id}`,
+          patientId: auth.patientId,
+          title: `Prior Authorization Units Running Low`,
+          description: `Authorization #${auth.authNumber} for ${auth.serviceName || auth.serviceCode} has only ${remainingUnits} units remaining out of ${auth.totalUnits}. Consider renewal.`,
+          dueDate: new Date(now.setDate(now.getDate() + 7)).toISOString(),
+          assignedToProviderId: billingProvider.id,
+          status: 'todo',
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+          createdByWorkflow: 'auto-auth-low-units',
+        })
+      }
+    }
+  }
+
+  return lowUnitsTasks
 }
 

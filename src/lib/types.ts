@@ -147,6 +147,7 @@ export interface Case {
   assignedProviderId?: string
   createdAt: string
   updatedAt: string
+  priorAuthId?: string
 }
 
 export interface Message {
@@ -392,5 +393,25 @@ export interface WaitlistEntry {
   reason: string
   createdAt: string
   notifiedAt?: string
+}
+
+export type PriorAuthStatus = 'pending' | 'active' | 'expired' | 'denied'
+
+export interface PriorAuthorization {
+  id: string
+  patientId: string
+  insurerId: string
+  authNumber: string
+  serviceCode: string
+  serviceName?: string
+  totalUnits: number
+  usedUnits: number
+  startDate: string
+  endDate: string
+  status: PriorAuthStatus
+  denialReason?: string
+  createdAt: string
+  updatedAt: string
+  caseId?: string
 }
 

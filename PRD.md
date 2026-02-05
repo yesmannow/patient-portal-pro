@@ -54,6 +54,20 @@ This is a clinical decision support tool with multiple interconnected features: 
 - **Progression**: View available databases → Select database → Preview medications → Select drugs to import → Confirm import → Add to medication database
 - **Success criteria**: Imported medications immediately available for prescribing, duplicate prevention, tier and manufacturer data preserved
 
+### Prior Authorization Management
+- **Functionality**: Track insurance prior authorizations with unit tracking, expiration monitoring, and automated workflow triggers
+- **Purpose**: Ensure clinical services are properly authorized, prevent denials, and manage authorization lifecycle
+- **Trigger**: Billing staff adds authorization, or automatic check when clinical case created
+- **Progression**: Add authorization details → Link to patient and service code → Track units consumed per appointment → Monitor expiration dates → Generate renewal tasks → View status dashboard
+- **Success criteria**: Authorization units auto-decrement on appointment completion, expiration warnings 30 days in advance, low unit alerts at 3 remaining, denied/expired authorizations clearly highlighted in bold red
+
+### Prior Authorization Workflow Integration
+- **Functionality**: Automatically check for active authorizations when clinical cases created, create billing tasks for missing or expiring authorizations
+- **Purpose**: Proactively manage authorization requirements in clinical workflow
+- **Trigger**: New clinical concern case created, or scheduled authorization check runs
+- **Progression**: Case created → Check patient authorizations → Flag missing auth → Create task for billing team → Alert on expiring auth (30 days) → Alert on low units (≤3)
+- **Success criteria**: Billing tasks auto-created, no clinical case proceeds without auth check, renewal initiated before expiration
+
 ## Edge Case Handling
 
 - **No Patient Selected** - Disable prescription creation, show prompt to select patient first
@@ -66,6 +80,11 @@ This is a clinical decision support tool with multiple interconnected features: 
 - **Duplicate Formulary Import** - Prevent importing medications that already exist in database, check by brand/generic name
 - **Empty Formulary Selection** - Disable import button if no medications selected from preview
 - **Large Formulary Import** - Show progress indicator during import, simulate async processing
+- **Missing Prior Authorization** - When clinical case created without active auth, auto-create billing task to verify if auth needed
+- **Expired Authorization Used** - Highlight in bold red, prevent unit consumption, alert billing team
+- **Denied Authorization Override** - Show denial reason prominently, require supervisor approval to proceed
+- **Multiple Active Authorizations** - Select auth with most remaining units when auto-tracking
+- **Authorization at Exactly 0 Units** - Auto-mark as expired, trigger renewal task
 
 ## Design Direction
 
@@ -152,6 +171,9 @@ Animations should be purposeful and restrained, focusing on safety-critical feed
   - Download (import action)
   - Package (medication count)
   - ArrowRight (navigation)
+  - FileText (prior authorization documents)
+  - XCircle (denied/expired status)
+  - Clock (pending/expiring status)
   
 - **Spacing**:
   - Cards: p-6 padding for content breathing room
