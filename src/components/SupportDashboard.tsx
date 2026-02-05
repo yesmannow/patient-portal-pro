@@ -1,66 +1,54 @@
 import { useState, useMemo } from 'react';
+import { useKV } from '@github/spark/hooks';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-  Desktop
+import { Switch } from '@/components/ui/switch';
+import {
+  Headset,
+  Clock,
+  ArrowsClockwise,
   CheckCircle,
   Question,
   CreditCard,
-  Warning
-import { toas
-import type
-interface 
-  CreditCard,
-  Clock,
-  Warning
+  Warning,
+  DesktopTower,
+  PaperPlaneRight
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
-import { useKV } from '@github/spark/hooks';
-import type { SupportInquiry, Patient, SupportInquiryStatus, SupportInquiryCategory } from '@/lib/types';
+import type { SupportInquiry, Patient, SupportInquiryStatus, SupportInquiryCategory, SupportMessage } from '@/lib/types';
 
-interface SupportMessage {
-  id: string;
-  inquiryId: string;
-  senderId: string;
-  senderName: string;
-  senderRole: 'patient' | 'staff';
-  body: string;
-  timestamp: string;
-  const [activeFilter, 
- 
+export function SupportDashboard() {
+  const [inquiries, setInquiries] = useKV<SupportInquiry[]>('support-inquiries', []);
+  const [messages, setMessages] = useKV<SupportMessage[]>('support-messages', []);
+  const [patients, setPatients] = useKV<Patient[]>('patients', []);
+  const [selectedInquiry, setSelectedInquiry] = useState<SupportInquiry | null>(null);
+  const [activeFilter, setActiveFilter] = useState<SupportInquiryStatus>('new');
+  const [messageText, setMessageText] = useState('');
+  const [isInternal, setIsInternal] = useState(false);
 
+  const sortedInquiries = useMemo(() => {
+    const statusOrder: Record<SupportInquiryStatus, number> = {
+      new: 0,
+      inProgress: 1,
       followUp: 2,
+      resolved: 3
     };
+    return [...(inquiries || [])].sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
   }, [inquiries]);
+
   const filteredInquiries = useMemo(() => {
     return sortedInquiries.filter(inq => inq.status === activeFilter);
+  }, [sortedInquiries, activeFilter]);
 
+  const inquiryMessages = useMemo(() => {
     if (!selectedInquiry) return [];
+    return (messages || []).filter(msg => msg.inquiryId === selectedInquiry.id);
   }, [messages, selectedInquiry]);
-
-    inProgress: (inquiries || []).filter(
-    resolved: (inquiries || []).filter(i => i.status === 'resolv
-
-    const patient = (
-  };
-  const getCategor
-      
-      case 'insurance': return <Question className="w-4 h-4" weight="duotone" />;
-    }
-
-    const variants = {
-      inProgress: 'bg-amber-600 text-white',
-      resolved: 'bg-green-600 text-white'
-    return <Badge className={variants[
-
-    const variants = {
-      medium: 'bg-slate-600 text-whi
-    };
-  };
 
   const stats = useMemo(() => ({
     new: (inquiries || []).filter(i => i.status === 'new').length,
@@ -158,8 +146,8 @@ interface SupportMessage {
                 Administrative customer service system
               </p>
             </div>
-                
-              
+          </div>
+        </div>
       </header>
 
       <div className="container mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -168,196 +156,213 @@ interface SupportMessage {
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">New</CardTitle>
               <Clock className="h-4 w-4 text-blue-600" weight="duotone" />
-                <div clas
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.new}</div>
+              <p className="text-xs text-muted-foreground">Unassigned inquiries</p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:border-amber-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('inProgress')}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+              <ArrowsClockwise className="h-4 w-4 text-amber-600" weight="duotone" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.inProgress}</div>
+              <p className="text-xs text-muted-foreground">Active conversations</p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:border-purple-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('followUp')}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Follow Up</CardTitle>
+              <Warning className="h-4 w-4 text-purple-600" weight="duotone" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.followUp}</div>
+              <p className="text-xs text-muted-foreground">Awaiting response</p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:border-green-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('resolved')}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Resolved</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-600" weight="duotone" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.resolved}</div>
+              <p className="text-xs text-muted-foreground">Completed inquiries</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle>Inquiry Queue</CardTitle>
+              <CardDescription>Filter: {activeFilter}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[600px] pr-4">
+                <div className="space-y-3">
+                  {filteredInquiries.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No {activeFilter} inquiries
+                    </p>
+                  ) : (
+                    filteredInquiries.map(inquiry => (
+                      <Card
+                        key={inquiry.id}
+                        className={`cursor-pointer transition-colors hover:border-primary ${
+                          selectedInquiry?.id === inquiry.id ? 'border-primary bg-accent/5' : ''
+                        }`}
+                        onClick={() => setSelectedInquiry(inquiry)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                {getCategoryIcon(inquiry.category)}
+                                <span className="font-medium text-sm">{inquiry.subject}</span>
+                              </div>
+                              {getPriorityBadge(inquiry.priority)}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {getPatientName(inquiry.patientId)}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              {getStatusBadge(inquiry.status)}
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(inquiry.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Message Thread</CardTitle>
+                  {selectedInquiry && (
+                    <CardDescription>
+                      {selectedInquiry.subject} - {getPatientName(selectedInquiry.patientId)}
+                    </CardDescription>
+                  )}
+                </div>
+                {selectedInquiry && (
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={selectedInquiry.status}
+                      onValueChange={(value) => handleUpdateStatus(selectedInquiry.id, value as SupportInquiryStatus)}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">New</SelectItem>
+                        <SelectItem value="inProgress">In Progress</SelectItem>
+                        <SelectItem value="followUp">Follow Up</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!selectedInquiry ? (
+                <div className="h-[600px] flex items-center justify-center">
+                  <div className="text-center">
+                    <Headset size={48} className="mx-auto mb-4 text-muted-foreground" weight="duotone" />
+                    <p className="text-muted-foreground">Select an inquiry to view messages</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <ScrollArea className="h-[400px] pr-4">
+                    <div className="space-y-4">
+                      <div className="bg-muted p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          {getCategoryIcon(selectedInquiry.category)}
+                          <span className="font-semibold">{selectedInquiry.subject}</span>
+                        </div>
+                        <p className="text-sm text-foreground">{selectedInquiry.description}</p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(selectedInquiry.createdAt).toLocaleString()}
+                          </span>
+                          {getPriorityBadge(selectedInquiry.priority)}
+                        </div>
+                      </div>
+
+                      {inquiryMessages.map(msg => (
+                        <div
+                          key={msg.id}
+                          className={`p-4 rounded-lg ${
+                            msg.senderRole === 'staff'
+                              ? 'bg-primary/10 ml-8'
+                              : 'bg-accent/10 mr-8'
+                          } ${msg.isInternal ? 'border-2 border-amber-500' : ''}`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-semibold text-sm">{msg.senderName}</span>
+                            {msg.isInternal && (
+                              <Badge className="bg-amber-600 text-white text-xs">Internal Note</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-foreground">{msg.body}</p>
+                          <span className="text-xs text-muted-foreground mt-2 block">
+                            {new Date(msg.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+
+                  <div className="space-y-3 border-t pt-4">
+                    <div>
+                      <Label htmlFor="message-text">Reply</Label>
+                      <Textarea
+                        id="message-text"
+                        placeholder="Type your response..."
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        rows={4}
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="internal-note"
+                          checked={isInternal}
+                          onCheckedChange={setIsInternal}
+                        />
+                        <Label htmlFor="internal-note" className="text-sm cursor-pointer">
+                          Internal note (not visible to patient)
+                        </Label>
+                      </div>
+                      <Button onClick={handleSendMessage} disabled={!messageText.trim()}>
+                        <PaperPlaneRight className="w-4 h-4 mr-2" weight="bold" />
+                        Send
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
-
+}
