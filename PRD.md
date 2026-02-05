@@ -1,146 +1,161 @@
 # Planning Guide
 
-A comprehensive appointment booking testing system that validates scheduling workflows across different medical condition types, simulating real-world scenarios where various conditions require different authorization levels, documentation, and provider specialties.
+A comprehensive WebRTC-based telehealth platform that enables secure, HIPAA-compliant video consultations between healthcare providers and patients, featuring advanced clinical workflows, smart waiting rooms, and collaborative session management.
 
 **Experience Qualities**: 
-1. **Clinical Precision** - Every interaction should feel medically accurate and trustworthy, with proper terminology and realistic workflows
-2. **Testing Clarity** - The system should make it immediately obvious what's being tested, what passed, and what failed
-3. **Operational Efficiency** - Rapid test execution with minimal clicks, allowing healthcare staff to validate booking logic quickly
+1. **Clinical Excellence** - Every interaction should feel professional and medically appropriate, instilling confidence in both providers and patients
+2. **Technical Reliability** - Rock-solid WebRTC connections with clear feedback on device status, permissions, and connection quality
+3. **Workflow Integration** - Seamlessly integrate video sessions with clinical documentation, specialist consultations, and appointment management
 
-**Complexity Level**: Light Application (multiple features with basic state)
-This is a focused testing tool with several interconnected features (patient selection, condition management, appointment booking, authorization validation) but doesn't require complex multi-view navigation or advanced state orchestration.
+**Complexity Level**: Complex Application (advanced functionality with multiple views and real-time communication)
+This is a sophisticated telehealth platform with WebRTC peer connections, real-time state management, device permission handling, multiple participant support, clinical note-taking workflows, and session management features that require careful state orchestration.
 
 ## Essential Features
 
-### Patient Selection with Condition Types
-- **Functionality**: Display a gallery of test patients, each with distinct medical conditions (acute injury, chronic disease, preventive care, mental health, surgical consult)
-- **Purpose**: Provide diverse test cases that represent real-world appointment booking scenarios
-- **Trigger**: User views the main dashboard
-- **Progression**: Dashboard loads → Patient cards display with condition badges → User clicks patient card → Patient becomes selected and highlighted
-- **Success criteria**: Patient selection persists, condition type clearly visible, active selection visually distinct
+### Smart Waiting Room
+- **Functionality**: Pre-session device testing and permission management with provider presence detection
+- **Purpose**: Ensure patients have working audio/video before joining and prevent premature session access
+- **Trigger**: Patient navigates to scheduled appointment
+- **Progression**: Waiting room loads → Patient tests camera/microphone → Permissions granted → Provider status checked → Join button enables when provider present → Session begins
+- **Success criteria**: Devices tested successfully, clear permission states, join blocked until provider ready, smooth transition to session
 
-### Appointment Booking Form
-- **Functionality**: Comprehensive booking form with provider selection, appointment type, date/time picker, and reason for visit
-- **Purpose**: Capture all necessary appointment details while enforcing condition-specific requirements
-- **Trigger**: User selects "Book Appointment" after choosing a patient
-- **Progression**: Button click → Dialog opens with form fields → User fills required fields → Validation runs → Submission processes → Success/error feedback displays
-- **Success criteria**: Form validates condition-specific requirements, prevents invalid bookings, shows clear error messages
+### WebRTC Video Session
+- **Functionality**: Real-time peer-to-peer video conferencing with full media control
+- **Purpose**: Enable high-quality, low-latency video consultations for telehealth appointments
+- **Trigger**: Patient/provider joins after waiting room or directly (provider)
+- **Progression**: Media streams initialized → Peer connections established → Video/audio tracks transmitted → UI controls respond → Session state managed
+- **Success criteria**: Sub-500ms connection time, clear video quality, synchronized audio, responsive controls
 
-### Authorization Requirement Validation
-- **Functionality**: Real-time checking of whether the selected condition type requires prior authorization before booking
-- **Purpose**: Simulate insurance authorization workflows that vary by condition severity and type
-- **Trigger**: User selects appointment type or submits booking form
-- **Progression**: Condition type detected → Authorization rules evaluated → Required/not required status shown → If required, additional fields appear → Documentation checklist enforced
-- **Success criteria**: Authorization requirements display accurately, conditional fields appear/hide correctly, booking blocked without proper authorization when required
+### Clinical Controls & Interactions
+- **Functionality**: Video toggle, microphone mute, screen sharing (desktop), participant pinning, note-taking mode
+- **Purpose**: Provide clinically-relevant controls optimized for healthcare workflows
+- **Trigger**: User interacts with control buttons during active session
+- **Progression**: Button clicked → MediaStreamTrack.enabled toggled → UI feedback immediate → Remote participants notified → State persisted
+- **Success criteria**: Instant visual feedback, state persists across UI updates, no audio/video glitches
 
-### Test Results Dashboard
-- **Functionality**: Summary view showing all booking attempts with success/failure status and authorization outcomes
-- **Purpose**: Track testing coverage across different condition types and identify patterns in booking failures
-- **Trigger**: User completes any booking attempt (success or failure)
-- **Progression**: Booking submitted → Result logged → Dashboard updates → Statistics recalculated → Test history displays with filters
-- **Success criteria**: All attempts logged, filtering works, statistics accurate, export option available
+### Provider Note-Taking Mode
+- **Functionality**: Minimize video session to draggable corner window while documenting in EMR
+- **Purpose**: Allow providers to maintain visual patient contact while charting
+- **Trigger**: Provider clicks clipboard/notes icon
+- **Progression**: Full session view → Minimize animation → Portal-rendered floating window → Draggable repositioning → Return to full view option
+- **Success criteria**: Video continues smoothly, window stays on top, drag works across screen, no layout breaking
 
-### Provider Availability Matrix
-- **Functionality**: Visual grid showing which providers are available for which condition types and appointment slots
-- **Purpose**: Ensure proper provider-condition matching and prevent inappropriate scheduling
-- **Trigger**: User opens provider selection dropdown or views availability calendar
-- **Progression**: Provider list loads → Availability filtered by condition type → Time slots shown → User selects available slot → Booking proceeds
-- **Success criteria**: Only appropriate providers shown for condition type, unavailable slots disabled, real-time updates
+### Third-Party Invitations
+- **Functionality**: Generate time-limited, pre-authenticated links for specialists or family to join
+- **Purpose**: Enable specialist consultations and family member participation without full portal access
+- **Trigger**: Provider clicks "Invite Participant" button
+- **Progression**: Dialog opens → Provider enters name and role → Link generated with token → Link copied to clipboard → Invitee uses link to join
+- **Success criteria**: Link generation instant, token secure and expiring, clipboard copy works, participant joins successfully
+
+### End Session Workflow
+- **Functionality**: Graceful session termination with appointment status update
+- **Purpose**: Ensure proper clinical documentation and appointment record completion
+- **Trigger**: Any participant clicks "End Call" button
+- **Progression**: Confirmation dialog displays → Status dropdown shown (Completed/No Show/Cancelled) → Selection made → All media tracks stopped → Peer connections closed → Session logged → Return to lobby
+- **Success criteria**: No orphaned connections, status saved correctly, clean state reset, history updated
 
 ## Edge Case Handling
 
-- **Missing Authorization** - Block booking and display clear message requiring prior auth documentation
-- **Provider Mismatch** - Prevent booking specialists with wrong condition types (e.g., orthopedist for mental health)
-- **Duplicate Bookings** - Warn when patient already has appointment in same time window
-- **Emergency Conditions** - Auto-prioritize and bypass authorization for urgent/emergency condition types
-- **Invalid Time Slots** - Disable past dates, non-business hours, and provider unavailable times
-- **Incomplete Patient Data** - Highlight missing required fields based on condition complexity
+- **Permission Denied** - Clear messaging when camera/mic blocked, instructions for browser settings
+- **Provider No-Show** - Patient waiting room stays locked, timeout notification after 15 minutes
+- **Mid-Session Disconnect** - Automatic reconnection attempt, visual indicator of connection quality
+- **Screen Share on Mobile** - Hide/disable screen share button on mobile/tablet devices
+- **Multiple Specialist Joins** - Layout adapts to grid view, pinning still functional
+- **Note Mode While Screen Sharing** - Floating window shows screen share feed, not participant video
+- **Browser Compatibility** - Graceful degradation for older browsers, feature detection
 
 ## Design Direction
 
-The design should evoke clinical professionalism with a testing mindset - combining the trustworthiness of medical software with the clarity of developer tools. It should feel like a robust quality assurance platform built specifically for healthcare workflows.
+The design should evoke boutique wellness aesthetics combined with cutting-edge technology - think high-end telehealth that feels both calming and sophisticated. Deep midnight blues create clinical professionalism while maintaining warmth and approachability.
 
 ## Color Selection
 
-A medical-professional palette with vibrant accents for test status indicators, combining clinical cleanliness with high-visibility testing feedback.
+A boutique wellness palette anchored by deep midnight tones, creating a premium telehealth experience that feels both clinical and calming.
 
-- **Primary Color**: Deep Medical Blue `oklch(0.45 0.15 245)` - Communicates healthcare professionalism and trust, used for primary actions and headers
+- **Primary Color**: Brand Midnight `oklch(0.15 0.02 245)` - Deep, sophisticated blue-black that communicates professionalism and focus, used for main UI backgrounds
 - **Secondary Colors**: 
-  - Soft Clinical Gray `oklch(0.96 0.005 245)` - Subtle backgrounds that don't compete with content
-  - Crisp White `oklch(0.99 0 0)` - Card backgrounds for information clarity
-- **Accent Color**: Vibrant Test Green `oklch(0.65 0.20 150)` - High-visibility color for successful test results and CTAs
+  - Twilight Accent `oklch(0.18 0.03 250)` - Slightly lighter midnight for subtle depth and layering
+  - Crisp Clinical White `oklch(0.99 0 0)` - High-contrast text and card backgrounds for clarity
+- **Accent Color**: Healing Teal `oklch(0.65 0.20 180)` - Vibrant teal for success states, active elements, and positive feedback
 - **Foreground/Background Pairings**: 
-  - Primary Blue on White `oklch(0.45 0.15 245)` on `oklch(0.99 0 0)` - Ratio 8.2:1 ✓
-  - Accent Green on White `oklch(0.65 0.20 150)` on `oklch(0.99 0 0)` - Ratio 4.9:1 ✓
-  - Dark Text on Background `oklch(0.22 0.02 245)` on `oklch(0.98 0.005 240)` - Ratio 13.1:1 ✓
-  - Warning Orange on White `oklch(0.70 0.18 55)` on `oklch(0.99 0 0)` - Ratio 4.6:1 ✓
-  - Error Red on White `oklch(0.55 0.22 25)` on `oklch(0.99 0 0)` - Ratio 5.8:1 ✓
+  - White on Brand Midnight `oklch(0.99 0 0)` on `oklch(0.15 0.02 245)` - Ratio 15.8:1 ✓
+  - Healing Teal on White `oklch(0.65 0.20 180)` on `oklch(0.99 0 0)` - Ratio 4.7:1 ✓
+  - White on Twilight `oklch(0.99 0 0)` on `oklch(0.18 0.03 250)` - Ratio 14.2:1 ✓
+  - Success Green `oklch(0.65 0.20 150)` on Card - Ratio 4.9:1 ✓
+  - Error Red `oklch(0.55 0.22 25)` on Card - Ratio 5.8:1 ✓
 
 ## Font Selection
 
-Typefaces that balance medical precision with modern testing UI clarity, combining a distinctive geometric sans with a technical monospace for data display.
+Typography that balances modern geometric forms with medical precision, combining Space Grotesk's distinctive character for UI with JetBrains Mono for clinical data.
 
 - **Typographic Hierarchy**: 
-  - H1 (Dashboard Title): Space Grotesk Bold / 32px / -2% letter spacing / leading-tight
-  - H2 (Section Headers): Space Grotesk SemiBold / 24px / -1% letter spacing / leading-snug
-  - H3 (Card Titles): Space Grotesk Medium / 18px / normal spacing / leading-normal
-  - Body (Descriptions): Space Grotesk Regular / 15px / normal spacing / leading-relaxed
+  - H1 (App Title): Space Grotesk Bold / 36px / -2% letter spacing / leading-tight
+  - H2 (Section Headers): Space Grotesk SemiBold / 28px / -1.5% letter spacing / leading-tight
+  - H3 (Card Titles): Space Grotesk Medium / 20px / normal spacing / leading-normal
+  - Body (UI Text): Space Grotesk Regular / 15px / normal spacing / leading-relaxed
   - Labels (Form Fields): Space Grotesk Medium / 13px / normal spacing / leading-normal
-  - Data/Codes (Patient IDs, Auth Numbers): JetBrains Mono Medium / 14px / normal spacing / tabular-nums
+  - Data (Session IDs, Timestamps): JetBrains Mono Medium / 14px / normal spacing / tabular-nums
 
 ## Animations
 
-Animations should provide immediate feedback for test actions while maintaining medical software professionalism - quick, purposeful, and never distracting from critical information.
+Animations should reinforce the premium telehealth experience - smooth, purposeful, and never distracting from the critical clinical conversation.
 
-- Form validation feedback appears with gentle 150ms fade-in
-- Patient selection highlights with 200ms color transition
-- Test result cards animate in with 250ms slide-up when added to history
-- Success/error toasts use 300ms spring animation for attention without disruption
-- Authorization requirement badges pulse subtly when conditions change
+- Video feed transitions use 300ms ease-out for layout changes
+- Participant pinning animates with 250ms scale and position interpolation
+- Note-taking mode minimize uses 400ms spring animation with portal rendering
+- Control button states respond with 100ms color transitions
+- Waiting room status changes fade in over 200ms
+- Floating window drag has zero animation - direct manipulation only
+- End session dialog appears with 150ms fade and subtle scale-up
 
 ## Component Selection
 
 - **Components**: 
-  - Dialog for appointment booking form with multi-step validation
-  - Card for patient profiles with condition type badges
-  - Badge for condition types, authorization status, and test results
-  - Select for provider and appointment type dropdowns
-  - Calendar (react-day-picker) for date selection with disabled unavailable dates
-  - Table for test results history with sortable columns
-  - Alert for authorization warnings and validation errors
-  - Tabs for switching between booking view and results dashboard
-  - Tooltip for explaining authorization requirements and provider specialties
-  - Progress indicator for multi-step authorization validation
-  
+  - Dialog (Shadcn) for end session confirmation and invite participant flows
+  - Card (Shadcn) for video participant containers and session history
+  - Button (Shadcn) with custom variants for video controls and destructive actions
+  - Select (Shadcn) for appointment status dropdown
+  - Input (Shadcn) for invite participant name entry
+  - Alert (Shadcn) for device permission status and provider presence
+  - Badge (Shadcn) for participant role indicators
+  - Tabs (Shadcn) for demo mode role selection
+
 - **Customizations**: 
-  - Custom condition type badge with color-coding (blue=chronic, orange=acute, green=preventive, purple=mental health, red=surgical)
-  - Authorization status indicator with icon and text
-  - Test result status cards with expandable detail sections
-  
+  - ParticipantVideo: Custom component with video element, hover overlay, and pin controls
+  - FloatingVideoWindow: Portal-rendered draggable window for note-taking mode
+  - WaitingRoom: Full-screen pre-session component with device testing
+  - Telehealth: Main session container with dynamic grid layout
+
 - **States**: 
-  - Buttons: Default with shadow, hover with lift effect, active with press depression, disabled with reduced opacity and cursor-not-allowed
-  - Form inputs: Default with subtle border, focus with primary ring and shadow, error with red border and shake animation, success with green checkmark
-  - Patient cards: Default with border, hover with shadow elevation, selected with primary border and background tint
-  
+  - Video enabled/disabled: Green default / Red destructive button variants
+  - Microphone muted/unmuted: Toggle between icon states, color shift
+  - Pin active/inactive: Filled pin icon vs outline, primary color highlight
+  - Provider present/absent: Pulsing green dot vs gray clock icon
+  - Connection quality: Border color changes (green/yellow/red)
+
 - **Icon Selection**: 
-  - User for patient profiles
-  - Calendar for appointment dates
-  - ClipboardText for authorization documentation
-  - Check for successful validations
-  - Warning for authorization requirements
-  - X for failed validations
-  - FirstAid for medical conditions
-  - TestTube for testing dashboard
-  
+  - VideoCamera/VideoCameraSlash for camera control
+  - Microphone/MicrophoneSlash for audio control  
+  - Monitor/MonitorArrowUp for screen sharing
+  - PushPin/PushPinSlash for participant pinning
+  - Clipboard for note-taking mode
+  - Phone for ending call
+  - UserPlus for inviting participants
+  - CheckCircle/XCircle for status indicators
+  - Clock for waiting states
+  - Copy for clipboard actions
+
 - **Spacing**: 
-  - Card padding: p-6 for primary cards, p-4 for compact cards
-  - Section gaps: gap-8 for major sections, gap-4 for related elements
-  - Form field spacing: space-y-4 for vertical form layout
-  - Grid gaps: gap-6 for patient card grid
-  
+  - Video grid: gap-4 between participant tiles
+  - Control bar: p-4 with gap-3 between buttons
+  - Waiting room: space-y-6 for major sections
+  - Floating window: Absolute positioning with draggable state
+
 - **Mobile**: 
-  - Patient cards stack vertically on mobile (grid-cols-1 sm:grid-cols-2 lg:grid-cols-3)
-  - Booking dialog switches to full-screen drawer on mobile
-  - Test results table converts to stacked card layout on mobile
-  - Navigation tabs scroll horizontally with touch on mobile
-  - Form switches to single column on mobile with larger touch targets (min-h-12)
+  - Waiting room stacks device preview and status vertically
+  - Video grid switches to single column on small screens
+  - Pinned view goes full screen on mobile
+  - Control buttons slightly larger touch targets (44px minimum)
+  - Screen sharing hidden on mobile devices
+  - Note-taking mode not available on mobile (EMR requires desktop)
+  - Floating window not draggable on mobile, docked to bottom
