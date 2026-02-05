@@ -16,22 +16,30 @@ export function AppointmentConfirmationManager() {
 
   useEffect(() => {
     const checkConfirmations = async () => {
-      await WorkflowEngine.check72HourConfirmations(
+      const confirmationsNeeded = await WorkflowEngine.trigger72HourConfirmation(
         appointments ?? [],
-        (id, updates) => {
-          setAppointments((current) =>
-            (current ?? []).map(apt =>
-              apt.id === id ? { ...apt, ...updates } : apt
-            )
-          )
-        }
+        patients ?? []
       )
+      
+      confirmationsNeeded.forEach(({ appointmentId }) => {
+        setAppointments((current) =>
+          (current ?? []).map(apt =>
+            apt.id === appointmentId 
+              ? { 
+                  ...apt, 
+                  status: 'pending_confirmation',
+                  confirmationSentAt: new Date().toISOString()
+                } 
+              : apt
+          )
+        )
+      })
     }
     
     checkConfirmations()
     const interval = setInterval(checkConfirmations, 60000)
     return () => clearInterval(interval)
-  }, [appointments, setAppointments])
+  }, [appointments, patients, setAppointments])
 
   const pendingConfirmations = (appointments ?? [])
     .filter(apt => apt.status === 'pending_confirmation')

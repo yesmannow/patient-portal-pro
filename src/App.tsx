@@ -13,6 +13,7 @@ import { ProviderAvailabilityManager } from '@/components/ProviderAvailabilityMa
 import { FrontDeskSchedule } from '@/components/FrontDeskSchedule'
 import { NurseRoomingQueue } from '@/components/NurseRoomingQueue'
 import { BillingDashboard } from '@/components/BillingDashboard'
+import { MarketingDashboard } from '@/components/MarketingDashboard'
 import { AppointmentConfirmationManager } from '@/components/AppointmentConfirmationManager'
 import { VoIPHandler } from '@/components/VoIPHandler'
 import { AppHeader } from '@/components/AppHeader'
@@ -136,6 +137,25 @@ function AppContent() {
           
           <TabsContent value="voip" className="space-y-0">
             <VoIPHandler />
+          </TabsContent>
+        </Tabs>
+      )
+    }
+
+    if (providerRole === 'marketing') {
+      return (
+        <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-2">
+            <TabsTrigger value="dashboard">Lead Funnel</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="dashboard" className="space-y-0">
+            <MarketingDashboard />
+          </TabsContent>
+          
+          <TabsContent value="analytics" className="space-y-0">
+            <AnalyticsDashboard />
           </TabsContent>
         </Tabs>
       )

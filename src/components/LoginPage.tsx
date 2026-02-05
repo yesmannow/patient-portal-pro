@@ -80,6 +80,7 @@ export function LoginPage() {
                     <SelectItem value="nurse">Nurse</SelectItem>
                     <SelectItem value="frontDesk">Front Desk</SelectItem>
                     <SelectItem value="billing">Billing</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>

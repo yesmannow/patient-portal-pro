@@ -29,34 +29,36 @@ export class WorkflowEngine {
     return createdTasks
   }
 
-  static async check72HourConfirmations(
+  static async trigger72HourConfirmation(
     appointments: Appointment[],
-    updateAppointment: (id: string, updates: Partial<Appointment>) => void
-  ): Promise<Appointment[]> {
+    patients: Patient[]
+  ): Promise<{ appointmentId: string; patientName: string; phoneNumber: string; dateTime: string }[]> {
     const now = new Date()
-    const appointmentsNeedingConfirmation: Appointment[] = []
+    const confirmationsToSend: { appointmentId: string; patientName: string; phoneNumber: string; dateTime: string }[] = []
 
     for (const appointment of appointments) {
-      if (appointment.status === 'scheduled' || appointment.status === 'pending_confirmation') {
+      if (appointment.status === 'scheduled' && !appointment.confirmationSentAt) {
         const appointmentTime = new Date(appointment.dateTime)
         const hoursUntilAppointment = (appointmentTime.getTime() - now.getTime()) / (1000 * 60 * 60)
 
-        if (hoursUntilAppointment <= 72 && hoursUntilAppointment > 0 && !appointment.confirmationSentAt) {
-          updateAppointment(appointment.id, {
-            status: 'pending_confirmation',
-            confirmationSentAt: now.toISOString(),
-          })
-          appointmentsNeedingConfirmation.push({
-            ...appointment,
-            status: 'pending_confirmation',
-            confirmationSentAt: now.toISOString(),
-          })
+        if (hoursUntilAppointment <= 72 && hoursUntilAppointment > 0) {
+          const patient = patients.find(p => p.id === appointment.patientId)
+          if (patient) {
+            confirmationsToSend.push({
+              appointmentId: appointment.id,
+              patientName: `${patient.firstName} ${patient.lastName}`,
+              phoneNumber: patient.phone,
+              dateTime: appointment.dateTime,
+            })
+          }
         }
       }
     }
 
-    return appointmentsNeedingConfirmation
+    return confirmationsToSend
   }
+
+
 
   static async simulatePatientSMSResponse(
     appointmentId: string,

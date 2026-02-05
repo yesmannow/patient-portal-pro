@@ -5,7 +5,7 @@ export type ConditionType = 'primaryCare' | 'physicalTherapy' | 'chronicCare' | 
 export type PatientStatus = 'new' | 'active' | 'dormant' | 'discharged'
 export type OnboardingSource = 'intakeForm' | 'referral' | 'phone' | 'website'
 
-export type ProviderRole = 'physician' | 'therapist' | 'nurse' | 'admin' | 'frontDesk' | 'billing' | 'doctor'
+export type ProviderRole = 'physician' | 'therapist' | 'nurse' | 'admin' | 'frontDesk' | 'billing' | 'doctor' | 'marketing'
 export type AvailabilityStatus = 'available' | 'busy' | 'away' | 'offline'
 
 export type CaseType = 'question' | 'followUp' | 'billing' | 'clinicalConcern' | 'admin'

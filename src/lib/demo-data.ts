@@ -124,6 +124,15 @@ export const DEMO_PROVIDERS: Provider[] = [
     email: 'michael.roberts@clinic.com',
     phone: '555-0205',
   },
+  {
+    id: 'provider-6',
+    name: 'Amanda Chen',
+    role: 'marketing',
+    specialty: 'Patient Outreach',
+    availabilityStatus: 'available',
+    email: 'amanda.chen@clinic.com',
+    phone: '555-0206',
+  },
 ]
 
 export const DEMO_APPOINTMENTS: Appointment[] = [
