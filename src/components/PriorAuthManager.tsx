@@ -7,30 +7,32 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, MagnifyingGlass, FileText, Warning, CheckCircle, XCircle, Clock } from '@phosphor-icons
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { Plus, MagnifyingGlass, FileText, Warning, CheckCircle, XCircle, Clock } from '@phosphor-icons/react'
+import { toast } from 'sonner'
+import { format } from 'date-fns'
 
+interface PriorAuthManagerProps {
   userRole?: 'billing' | 'nurse' | 'admin' | 'patient'
+}
 
+export function PriorAuthManager({ userRole = 'billing' }: PriorAuthManagerProps) {
+  const [priorAuths, setPriorAuths] = useKV<PriorAuthorization[]>('prior-authorizations', [])
+  const [patients] = useKV<Patient[]>('patients', [])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expiring' | 'low-units'>('all')
+  const [isNewAuthOpen, setIsNewAuthOpen] = useState(false)
 
-  const [searchQuery, setSearchQu
-  const [isNewAuthOpen, setIsNewAuthOpen] = useState(f
- 
+  const canEdit = userRole === 'billing' || userRole === 'admin'
 
+  const filteredAuths = useMemo(() => {
+    const now = new Date()
     const thirtyDaysFromNow = new Date()
+    thirtyDaysFromNow.setDate(now.getDate() + 30)
 
-      const patient = patients.find(p => p.id === aut
-      const authNumber = auth.authNumber.toLowerCase
-      const query = searchQuery.toLowerCase()
-      return patientName.includes(query) || authNumber.incl
-
-      filtered = filtered.filter(auth => auth.status === 'active')
-
-        const endDate = new Date(auth.e
-      })
-      filtered = filtered.filter(auth =>
-        const remaining = auth.totalUnits - auth.usedUnits
-
-    let filtered = priorAuths.filter(auth => {
+    let filtered = (priorAuths ?? []).filter(auth => {
       const patient = patients.find(p => p.id === auth.patientId)
       const patientName = patient ? `${patient.firstName} ${patient.lastName}`.toLowerCase() : ''
       const authNumber = auth.authNumber.toLowerCase()
@@ -62,51 +64,50 @@ import { Plus, MagnifyingGlass, FileText, Warning, CheckCircle, XCircle, Clock }
   const expiringCount = useMemo(() => {
     const now = new Date()
     const thirtyDaysFromNow = new Date()
+    thirtyDaysFromNow.setDate(now.getDate() + 30)
+    return (priorAuths ?? []).filter(auth => {
+      if (auth.status !== 'active') return false
+      const endDate = new Date(auth.endDate)
+      return endDate <= thirtyDaysFromNow && endDate > now
+    }).length
+  }, [priorAuths])
+
+  const lowUnitsCount = useMemo(() => {
+    return (priorAuths ?? []).filter(auth => {
+      if (auth.status !== 'active') return false
+      const remaining = auth.totalUnits - auth.usedUnits
+      return remaining <= 3 && remaining > 0
+    }).length
+  }, [priorAuths])
+
+  const handleAddAuth = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+
+    const newAuth: PriorAuthorization = {
+      id: crypto.randomUUID(),
+      patientId: formData.get('patientId') as string,
+      insurerId: formData.get('insurerId') as string,
       authNumber: formData.get('authNumber') as string,
-
+      serviceCode: formData.get('serviceCode') as string,
+      serviceName: formData.get('serviceName') as string,
+      totalUnits: parseInt(formData.get('totalUnits') as string),
       usedUnits: 0,
-      endDate: formData.get('endDate') as string
-      createdAt: new Date().toISOString(),
-    }
-    setPriorA
-    toast.success(
-
-    setPriorAuths(current =>
-        auth.id === authId
-          : auth
-    )
-  }
-  const getSt
-    const endDate 
-
-      return <Badge variant="destructive" className="gap-1"><XCirc
-    if (auth.status ==
-    }
-
-    if (daysUntilExpiration <= 30 && days
-    }
-  }
-  const getPatientName = (patientId: string) => {
-    return patient ? `${patient.firstName} ${patient.la
-
-    <div className="space-y-6">
-        <div>
-          <p classN
-        {canEdit && (
-            <DialogTrigger asChild>
+      startDate: formData.get('startDate') as string,
+      endDate: formData.get('endDate') as string,
       status: 'active',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
 
-    setPriorAuths(current => [...current, newAuth])
+    setPriorAuths(current => [...(current ?? []), newAuth])
     setIsNewAuthOpen(false)
     toast.success('Prior authorization added successfully')
   }
 
   const handleUpdateStatus = (authId: string, newStatus: 'active' | 'expired' | 'denied', denialReason?: string) => {
     setPriorAuths(current =>
-      current.map(auth =>
+      (current ?? []).map(auth =>
         auth.id === authId
           ? { ...auth, status: newStatus, denialReason, updatedAt: new Date().toISOString() }
           : auth
@@ -140,11 +141,22 @@ import { Plus, MagnifyingGlass, FileText, Warning, CheckCircle, XCircle, Clock }
     return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'
   }
 
+  const getBorderColor = (auth: PriorAuthorization) => {
+    if (auth.status === 'expired' || auth.status === 'denied') return '#dc2626'
+    const remaining = auth.totalUnits - auth.usedUnits
+    if (remaining <= 3 && remaining > 0) return '#ea580c'
+    const now = new Date()
+    const endDate = new Date(auth.endDate)
+    const daysUntilExpiration = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    if (daysUntilExpiration <= 30 && daysUntilExpiration > 0) return '#ea580c'
+    return '#14b8a6'
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-semibold tracking-tight">Prior Authorizations</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Prior Authorizations</h2>
           <p className="text-sm text-muted-foreground">Manage and track patient prior authorizations</p>
         </div>
         {canEdit && (
@@ -190,68 +202,167 @@ import { Plus, MagnifyingGlass, FileText, Warning, CheckCircle, XCircle, Clock }
                   </div>
                   <div className="space-y-2 col-span-2">
                     <Label htmlFor="serviceName">Service Name</Label>
+                    <Input id="serviceName" name="serviceName" placeholder="e.g., Therapeutic Exercise" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="totalUnits">Total Units Authorized</Label>
+                    <Input id="totalUnits" name="totalUnits" type="number" min="1" placeholder="e.g., 20" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="startDate">Start Date</Label>
+                    <Input id="startDate" name="startDate" type="date" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endDate">End Date</Label>
+                    <Input id="endDate" name="endDate" type="date" required />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setIsNewAuthOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit">Add Authorization</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+
       <Card>
-          <div className
-              <MagnifyingGlass className="abs
-                placeholder="Search by patient, auth number, or ser
+        <CardHeader>
+          <div className="flex flex-col gap-4">
+            <div className="relative">
+              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              <Input
+                placeholder="Search by patient, auth number, or service code..."
+                value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
               />
-            <Tabs value={filterStatus} onValu
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="expiring">Expiring</TabsTrigger>
-              </TabsList
-          </div>
-        <CardContent>
-            <div className="text-center py-12">
-              <h3 classN
-                {searc
             </div>
+            <Tabs value={filterStatus} onValueChange={(v) => setFilterStatus(v as typeof filterStatus)}>
+              <TabsList>
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="active">Active</TabsTrigger>
+                <TabsTrigger value="expiring">
+                  Expiring {expiringCount > 0 && <Badge variant="secondary" className="ml-2">{expiringCount}</Badge>}
+                </TabsTrigger>
+                <TabsTrigger value="low-units">
+                  Low Units {lowUnitsCount > 0 && <Badge variant="secondary" className="ml-2">{lowUnitsCount}</Badge>}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredAuths.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText size={48} className="mx-auto mb-4 text-muted-foreground" weight="duotone" />
+              <h3 className="text-lg font-medium mb-2">No Authorizations Found</h3>
+              <p className="text-sm text-muted-foreground">
+                {searchQuery ? 'Try a different search term' : 'Add a new prior authorization to get started'}
+              </p>
+            </div>
+          ) : (
             <div className="space-y-3">
-                const rema
+              {filteredAuths.map(auth => {
+                const remaining = auth.totalUnits - auth.usedUnits
+                const percentUsed = (auth.usedUnits / auth.totalUnits) * 100
 
-                  <Card key={auth.id} className="border-l-4" style
-                      
-                  }}>
-                      <div c
-                   
-          
-            
-
+                return (
+                  <Card key={auth.id} className="border-l-4" style={{ borderLeftColor: getBorderColor(auth) }}>
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-lg">{getPatientName(auth.patientId)}</h3>
+                              {getStatusBadge(auth)}
                             </div>
-              
-                            </div>
-                              <span className="text-muted-foreground">Insurer:</span>{' 
-                            </div>
-                       
-                       
-                              <span className="text-muted-foreground">Units:</span>{' '}
-                        
-               
-              
-                                />
-                            </div>
-                              <div className="col-span-2 text-destructive font-bold"
-                       
-                       
+                            <p className="text-sm font-medium text-muted-foreground mb-1">{auth.serviceName || auth.serviceCode}</p>
+                            <p className="text-xs text-muted-foreground">Auth #: {auth.authNumber}</p>
+                          </div>
                         </div>
-                        
-               
-              
-                                  onClick={() => handleUpdateStatus(auth.id, 'expi
-                                  Mark Expired
-                                <Button
-                       
-                       
-                                  }}
-                        
-               
-            
 
-            
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Insurer:</span>{' '}
+                            <span className="font-medium">{auth.insurerId}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Service Code:</span>{' '}
+                            <span className="font-medium mono">{auth.serviceCode}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Valid:</span>{' '}
+                            <span className="font-medium">
+                              {format(new Date(auth.startDate), 'MMM d, yyyy')} - {format(new Date(auth.endDate), 'MMM d, yyyy')}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Units:</span>{' '}
+                            <span className={`font-bold ${remaining <= 3 && remaining > 0 ? 'text-warning-severe' : ''}`}>
+                              {remaining} / {auth.totalUnits} remaining
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Units Used</span>
+                            <span className="font-medium">{percentUsed.toFixed(0)}%</span>
+                          </div>
+                          <div className="w-full bg-secondary rounded-full h-2">
+                            <div
+                              className="h-2 rounded-full transition-all"
+                              style={{
+                                width: `${Math.min(percentUsed, 100)}%`,
+                                backgroundColor: percentUsed >= 90 ? '#dc2626' : percentUsed >= 75 ? '#ea580c' : '#14b8a6'
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {auth.denialReason && (
+                          <div className="col-span-2 text-destructive font-bold text-sm bg-destructive/10 p-3 rounded-md">
+                            Denial Reason: {auth.denialReason}
+                          </div>
+                        )}
+
+                        {canEdit && auth.status === 'active' && (
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUpdateStatus(auth.id, 'expired')}
+                            >
+                              Mark Expired
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                const reason = prompt('Enter denial reason:')
+                                if (reason) handleUpdateStatus(auth.id, 'denied', reason)
+                              }}
+                            >
+                              Mark Denied
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
               })}
+            </div>
           )}
+        </CardContent>
       </Card>
+    </div>
   )
+}
 
 
 

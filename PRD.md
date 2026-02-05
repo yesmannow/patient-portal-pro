@@ -1,14 +1,14 @@
 # Planning Guide
 
-A comprehensive prescription management system that enables healthcare providers to safely prescribe medications with real-time allergy cross-checking and drug-drug interaction warnings to prevent adverse events and improve patient safety.
+A comprehensive billing and authorization management system for healthcare staff to track payments, manage claims, and monitor prior authorizations with unit tracking, expiration monitoring, and automated workflow support.
 
 **Experience Qualities**: 
-1. **Clinical Confidence** - The interface should inspire trust through clear visual hierarchy, prominent safety warnings, and comprehensive medication data presentation
-2. **Rapid Efficiency** - Prescribing workflows must be streamlined for busy clinicians, with quick search, minimal clicks, and intelligent defaults
-3. **Safety-First** - Warning systems should be impossible to miss, using bold visual indicators and requiring explicit acknowledgment of risks
+1. **Financial Clarity** - The interface should provide clear visibility into outstanding balances, payments, and authorization status with organized data presentation
+2. **Proactive Management** - Warning systems for expiring authorizations and low units should be prominent, enabling staff to act before issues arise
+3. **Operational Efficiency** - Billing workflows must be streamlined for busy staff, with quick search, filtering, and status updates
 
-**Complexity Level**: Complex Application (advanced functionality, likely with multiple views)
-This is a clinical decision support tool with multiple interconnected features: prescription management, patient allergy tracking, drug interaction checking, and prescription history. It requires robust state management, complex validation logic, and multiple coordinated views.
+**Complexity Level**: Light Application (multiple features with basic state)
+This is a billing dashboard with multiple coordinated views for payments, charges, claim denials, and prior authorization management. It requires state management for different data types and filtering capabilities, but workflows are relatively straightforward.
 
 ## Essential Features
 

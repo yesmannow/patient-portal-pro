@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PaymentCharge, Patient, Payment } from '@/lib/types'
 import { CreditCard, Receipt, Users, XCircle } from '@phosphor-icons/react'
 import { format } from 'date-fns'
+import { PriorAuthManager } from './PriorAuthManager'
 
 export function BillingDashboard() {
   const [charges] = useKV<PaymentCharge[]>('payment-charges', [])
@@ -95,6 +96,7 @@ export function BillingDashboard() {
           <TabsTrigger value="outstanding">Outstanding Charges</TabsTrigger>
           <TabsTrigger value="payments">Recent Payments</TabsTrigger>
           <TabsTrigger value="denials">Claim Denials</TabsTrigger>
+          <TabsTrigger value="prior-auth">Prior Authorizations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="outstanding" className="space-y-4">
@@ -266,6 +268,10 @@ export function BillingDashboard() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="prior-auth" className="space-y-4">
+          <PriorAuthManager userRole="billing" />
         </TabsContent>
       </Tabs>
     </div>
