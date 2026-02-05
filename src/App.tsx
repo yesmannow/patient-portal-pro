@@ -16,6 +16,7 @@ import { BillingDashboard } from '@/components/BillingDashboard'
 import { MarketingDashboard } from '@/components/MarketingDashboard'
 import { AppointmentConfirmationManager } from '@/components/AppointmentConfirmationManager'
 import { VoIPHandler } from '@/components/VoIPHandler'
+import { APIIntegrationDashboard } from '@/components/APIIntegrationDashboard'
 import { AppHeader } from '@/components/AppHeader'
 import { Toaster } from '@/components/ui/sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -24,7 +25,7 @@ import { Patient, Provider, Appointment, PaymentCharge, LabResult, Case, Task } 
 import { initializeDemoData } from '@/lib/demo-data'
 
 type PatientView = 'dashboard' | 'profile' | 'forms'
-type ProviderView = 'dashboard' | 'tasks' | 'analytics' | 'forms' | 'templates' | 'availability' | 'automation' | 'voip'
+type ProviderView = 'dashboard' | 'tasks' | 'analytics' | 'forms' | 'templates' | 'availability' | 'automation' | 'voip' | 'api-hub'
 
 function AppContent() {
   const { currentUser, providerRole } = useAuth()
@@ -163,7 +164,7 @@ function AppContent() {
 
     return (
       <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
-        <TabsList className="grid w-full max-w-4xl grid-cols-7">
+        <TabsList className="grid w-full max-w-5xl grid-cols-8">
           <TabsTrigger value="dashboard">Cases</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="availability">Availability</TabsTrigger>
@@ -171,6 +172,7 @@ function AppContent() {
           <TabsTrigger value="forms">Forms</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="voip">VoIP</TabsTrigger>
+          <TabsTrigger value="api-hub">API Hub</TabsTrigger>
         </TabsList>
         
         <TabsContent value="dashboard" className="space-y-0">
@@ -203,6 +205,10 @@ function AppContent() {
 
         <TabsContent value="voip" className="space-y-0">
           <VoIPHandler />
+        </TabsContent>
+
+        <TabsContent value="api-hub" className="space-y-0">
+          <APIIntegrationDashboard />
         </TabsContent>
       </Tabs>
     )

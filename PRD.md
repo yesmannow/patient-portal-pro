@@ -86,8 +86,43 @@ This platform includes role-based multi-view dashboards, workflow automation eng
 - **Functionality**: Granular role-based dashboard views for Front Desk, Nurse, Doctor, and Billing staff; each role sees only relevant features and data tailored to their job duties
 - **Purpose**: Eliminates "click fatigue" by removing irrelevant features; improves efficiency by presenting role-specific workflows; protects sensitive data through role segregation
 - **Trigger**: Provider logs in and selects role; system renders appropriate dashboard view
-- **Progression**: Provider selects role at login → System loads role-specific navigation tabs → Dashboard displays relevant features (Front Desk: Schedule with hover profiles, confirmations, VoIP | Nurse: Rooming queue, tasks, VoIP | Doctor: Cases, tasks, availability, analytics, forms, templates, VoIP | Billing: Billing dashboard, analytics, VoIP)
+- **Progression**: Provider selects role at login → System loads role-specific navigation tabs → Dashboard displays relevant features (Front Desk: Schedule with hover profiles, confirmations, VoIP | Nurse: Rooming queue, tasks, VoIP | Doctor: Cases, tasks, availability, analytics, forms, templates, VoIP, API Hub | Billing: Billing dashboard, analytics, VoIP)
 - **Success criteria**: Each role sees only their designated features; unauthorized features are not rendered; workflow efficiency improves through focused UI
+
+### External API Integration Hub
+- **Functionality**: Real-time integration with external public APIs for data validation, clinical decision support, holiday awareness, and security scanning; unified dashboard showing all API connections and automation workflows
+- **Purpose**: Connects internal workflows to external data sources for automated validation, compliance, and clinical accuracy; demonstrates "Gold Standard" operational automation beyond internal features
+- **Trigger**: Provider navigates to API Hub; system executes API calls based on user actions (intake form submission, drug lookup, appointment scheduling, file upload)
+- **Progression**: User initiates action → System calls appropriate external API → Validates/enriches data in real-time → Returns result → User sees instant feedback → Data saved only if validation passes
+- **Success criteria**: Phone numbers validated for SMS capability; emails screened for disposable addresses; addresses verified with USPS; public holidays block scheduling; drug info retrieved from OpenFDA; ICD-10 codes suggested for diagnoses; uploaded files scanned for malware before storage
+
+### Smart Patient Intake with Data Validation
+- **Functionality**: Patient registration form with real-time phone validation (NumVerify/Abstract API), email quality scoring (Eva/MailboxLayer), and USPS address verification (Smarty/Postcodes.io)
+- **Purpose**: Prevents bad contact data from entering the system; ensures SMS confirmations reach mobile numbers; validates deliverable addresses for billing
+- **Trigger**: Front desk or patient fills out intake form; clicks validation buttons
+- **Progression**: User enters contact info → Clicks validate button → API validates data → System displays result (mobile/landline, email quality score, USPS-standardized address) → Flags issues before save → Only clean data enters database
+- **Success criteria**: Phone validation identifies SMS-capable mobile numbers; email validation rejects disposable addresses; address validation auto-corrects to USPS standard format; form prevents submission with invalid data
+
+### Clinical Decision Support APIs
+- **Functionality**: Real-time drug information lookup via OpenFDA (brand names, warnings, recalls, adverse events) and ICD-10 code search via ClinicalTables API for automated billing
+- **Purpose**: Provides instant clinical reference during prescribing and documentation; automates medical coding for billing claims; alerts to drug recalls and safety issues
+- **Trigger**: Provider searches drug name or diagnosis in Clinical Decision Support dashboard
+- **Progression**: Provider types drug name → Searches OpenFDA → System displays official drug label, warnings, recalls, adverse events → Provider types diagnosis → Searches ICD-10 → System suggests billable codes → Provider copies code to billing form
+- **Success criteria**: Drug info retrieved within 2 seconds; recalls prominently displayed; ICD-10 suggestions match diagnosis; codes marked as billable; providers can copy codes to clipboard
+
+### Holiday-Aware Smart Scheduling
+- **Functionality**: Appointment scheduler integrated with Nager.Date public holiday API; automatically blocks scheduling on federal holidays, weekends, and office closures
+- **Purpose**: Prevents patients from self-scheduling on days the office is closed; reduces administrative burden of manually blocking dates
+- **Trigger**: Patient or front desk accesses appointment scheduler; system loads current year holidays
+- **Progression**: User opens scheduler → System fetches holidays from API → Calendar disables holiday dates → User selects available date → Selects provider and time → Books appointment → System queues 72-hour SMS confirmation
+- **Success criteria**: Holidays auto-blocked on calendar; holiday names displayed on hover; weekends disabled; only available dates selectable; upcoming holidays listed in sidebar
+
+### Secure Document Upload with Malware Scanning
+- **Functionality**: Patient document uploader with real-time malware scanning via VirusTotal/ClamAV API before files reach server
+- **Purpose**: HIPAA compliance and ransomware protection; prevents malicious files from infecting medical records system
+- **Trigger**: Patient or staff uploads document (PDF, image, etc.)
+- **Progression**: User selects file → System sends to scanning API → Displays scanning progress → Returns threat report → Safe files marked green and uploadable → Infected files marked red and blocked → Only clean files reach server
+- **Success criteria**: All files scanned before upload; threats blocked automatically; scan results displayed with threat names; safe files upload successfully; infected files rejected with clear warning
 
 ### Hover-Active Schedule (Front Desk)
 - **Functionality**: Front Desk schedule displays today's appointments with hover-triggered mini-profile popups showing patient balance, missing forms (HIPAA/Intake), and visit reason
@@ -136,6 +171,14 @@ This platform includes role-based multi-view dashboards, workflow automation eng
 - **AI Response Failures**: If AI generation fails, providers can still manually type responses or use non-AI templates; user receives clear error message.
 - **Template Keyword Mismatches**: When no templates match case keywords, providers can still manually select from all templates or generate fresh AI responses.
 - **Duplicate Templates**: System allows multiple templates with similar keywords to coexist; relevance scoring ensures best matches surface first.
+- **API Rate Limiting**: External API calls implement exponential backoff and caching; users notified if service temporarily unavailable.
+- **Invalid API Responses**: Validation APIs failing gracefully degrade to warning state; data entry still permitted with manual review flag.
+- **Phone Number Edge Cases**: International numbers, extensions, and formatted variations normalized before validation; unsupported formats flagged.
+- **Address Autocorrect Conflicts**: When USPS suggests address correction, user shown both original and corrected versions with option to choose.
+- **Holiday API Failures**: If holiday service unavailable, system falls back to cached previous year data with staleness warning.
+- **File Size Limits**: Documents exceeding 10MB rejected with clear message before scanning API called to avoid unnecessary charges.
+- **Concurrent Appointment Booking**: Double-booking prevented through optimistic locking; second user notified slot taken and shown alternatives.
+- **Malware False Positives**: When scanning API flags common medical terms in filenames, admin override available with audit trail.
 
 ## Design Direction
 
