@@ -1,239 +1,116 @@
-import { useState, useEffect } from 'react'
-import { AuthProvider, useAuth } from '@/lib/auth-context'
-import { LoginPage } from '@/components/LoginPage'
-import { PatientDashboard } from '@/components/PatientDashboard'
-import { PatientProfile } from '@/components/PatientProfile'
-import { PatientForms } from '@/components/PatientForms'
-import { ProviderDashboard } from '@/components/ProviderDashboard'
-import { TaskBoard } from '@/components/TaskBoard'
-import { AnalyticsDashboard } from '@/components/AnalyticsDashboard'
-import { FormBuilder } from '@/components/FormBuilder'
-import { ResponseTemplateManager } from '@/components/ResponseTemplateManager'
-import { ProviderAvailabilityManager } from '@/components/ProviderAvailabilityManager'
-import { FrontDeskSchedule } from '@/components/FrontDeskSchedule'
-import { NurseRoomingQueue } from '@/components/NurseRoomingQueue'
-import { BillingDashboard } from '@/components/BillingDashboard'
-import { MarketingDashboard } from '@/components/MarketingDashboard'
-import { AppointmentConfirmationManager } from '@/components/AppointmentConfirmationManager'
-import { VoIPHandler } from '@/components/VoIPHandler'
-import { APIIntegrationDashboard } from '@/components/APIIntegrationDashboard'
-import { AppHeader } from '@/components/AppHeader'
-import { Toaster } from '@/components/ui/sonner'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { Patient, Provider, Appointment, PaymentCharge, LabResult, Case, Task } from '@/lib/types'
-import { initializeDemoData } from '@/lib/demo-data'
+import { Patient, Prescription } from '@/types/prescription'
+import { PatientSelector } from '@/components/prescription/PatientSelector'
+import { PrescriptionList } from '@/components/prescription/PrescriptionList'
+import { NewPrescriptionDialog } from '@/components/prescription/NewPrescriptionDialog'
+import { AllergyManager } from '@/components/prescription/AllergyManager'
+import { Button } from '@/components/ui/button'
+import { Toaster } from '@/components/ui/sonner'
+import { Plus, Pills } from '@phosphor-icons/react'
 
-type PatientView = 'dashboard' | 'profile' | 'forms'
-type ProviderView = 'dashboard' | 'tasks' | 'analytics' | 'forms' | 'templates' | 'availability' | 'automation' | 'voip' | 'api-hub'
+export default function App() {
+  const [patients] = useKV<Patient[]>('patients', [])
+  const [prescriptions, setPrescriptions] = useKV<Prescription[]>('prescriptions', [])
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null)
+  const [isNewPrescriptionOpen, setIsNewPrescriptionOpen] = useState(false)
 
-function AppContent() {
-  const { currentUser, providerRole } = useAuth()
-  const [patientView, setPatientView] = useState<PatientView>('dashboard')
-  const [providerView, setProviderView] = useState<ProviderView>('dashboard')
-  const [patients, setPatients] = useKV<Patient[]>('patients', [])
-  const [providers, setProviders] = useKV<Provider[]>('providers', [])
-  const [appointments, setAppointments] = useKV<Appointment[]>('appointments', [])
-  const [charges, setCharges] = useKV<PaymentCharge[]>('payment-charges', [])
-  const [labResults, setLabResults] = useKV<LabResult[]>('lab-results', [])
-  const [cases, setCases] = useKV<Case[]>('cases', [])
-  const [tasks, setTasks] = useKV<Task[]>('tasks', [])
+  const selectedPatient = patients.find(p => p.id === selectedPatientId)
+  const patientPrescriptions = prescriptions.filter(p => p.patientId === selectedPatientId)
+  const activePrescriptions = patientPrescriptions.filter(p => p.status === 'active')
 
-  useEffect(() => {
-    initializeDemoData(
-      setPatients,
-      setProviders,
-      setAppointments,
-      setCharges,
-      setLabResults,
-      setCases,
-      setTasks
+  const handleDiscontinuePrescription = (prescriptionId: string) => {
+    setPrescriptions(current =>
+      current.map(p =>
+        p.id === prescriptionId
+          ? { ...p, status: 'discontinued' as const, discontinuedDate: new Date().toISOString() }
+          : p
+      )
     )
-  }, [])
-
-  if (!currentUser) {
-    return <LoginPage />
   }
 
-  const currentPatient = patients?.find((p) => p.email === currentUser?.email)
-  const currentProvider = providers?.find((p) => p.email === currentUser?.email)
-
-  const renderPatientContent = () => {
-    switch (patientView) {
-      case 'profile':
-        return <PatientProfile />
-      case 'forms':
-        return currentPatient ? <PatientForms patientId={currentPatient.id} /> : <div>Loading...</div>
-      case 'dashboard':
-      default:
-        return <PatientDashboard />
-    }
-  }
-
-  const renderProviderContent = () => {
-    if (providerRole === 'frontDesk') {
-      return (
-        <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
-            <TabsTrigger value="dashboard">Schedule</TabsTrigger>
-            <TabsTrigger value="automation">Confirmations</TabsTrigger>
-            <TabsTrigger value="voip">VoIP</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="dashboard" className="space-y-0">
-            <FrontDeskSchedule />
-          </TabsContent>
-          
-          <TabsContent value="automation" className="space-y-0">
-            <AppointmentConfirmationManager />
-          </TabsContent>
-          
-          <TabsContent value="voip" className="space-y-0">
-            <VoIPHandler />
-          </TabsContent>
-        </Tabs>
-      )
-    }
-
-    if (providerRole === 'nurse') {
-      return (
-        <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
-            <TabsTrigger value="dashboard">Rooming Queue</TabsTrigger>
-            <TabsTrigger value="tasks">My Tasks</TabsTrigger>
-            <TabsTrigger value="voip">VoIP</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="dashboard" className="space-y-0">
-            <NurseRoomingQueue />
-          </TabsContent>
-          
-          <TabsContent value="tasks" className="space-y-0">
-            <TaskBoard />
-          </TabsContent>
-          
-          <TabsContent value="voip" className="space-y-0">
-            <VoIPHandler />
-          </TabsContent>
-        </Tabs>
-      )
-    }
-
-    if (providerRole === 'billing') {
-      return (
-        <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
-            <TabsTrigger value="dashboard">Billing</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="voip">VoIP</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="dashboard" className="space-y-0">
-            <BillingDashboard />
-          </TabsContent>
-          
-          <TabsContent value="analytics" className="space-y-0">
-            <AnalyticsDashboard />
-          </TabsContent>
-          
-          <TabsContent value="voip" className="space-y-0">
-            <VoIPHandler />
-          </TabsContent>
-        </Tabs>
-      )
-    }
-
-    if (providerRole === 'marketing') {
-      return (
-        <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-2">
-            <TabsTrigger value="dashboard">Lead Funnel</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="dashboard" className="space-y-0">
-            <MarketingDashboard />
-          </TabsContent>
-          
-          <TabsContent value="analytics" className="space-y-0">
-            <AnalyticsDashboard />
-          </TabsContent>
-        </Tabs>
-      )
-    }
-
-    return (
-      <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
-        <TabsList className="grid w-full max-w-5xl grid-cols-8">
-          <TabsTrigger value="dashboard">Cases</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          <TabsTrigger value="availability">Availability</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="forms">Forms</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="voip">VoIP</TabsTrigger>
-          <TabsTrigger value="api-hub">API Hub</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="dashboard" className="space-y-0">
-          <ProviderDashboard />
-        </TabsContent>
-        
-        <TabsContent value="tasks" className="space-y-0">
-          <TaskBoard />
-        </TabsContent>
-
-        <TabsContent value="availability" className="space-y-0">
-          {currentProvider ? (
-            <ProviderAvailabilityManager providerId={currentProvider.id} />
-          ) : (
-            <div>Loading provider data...</div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="analytics" className="space-y-0">
-          <AnalyticsDashboard />
-        </TabsContent>
-        
-        <TabsContent value="forms" className="space-y-0">
-          <FormBuilder />
-        </TabsContent>
-
-        <TabsContent value="templates" className="space-y-0">
-          <ResponseTemplateManager />
-        </TabsContent>
-
-        <TabsContent value="voip" className="space-y-0">
-          <VoIPHandler />
-        </TabsContent>
-
-        <TabsContent value="api-hub" className="space-y-0">
-          <APIIntegrationDashboard />
-        </TabsContent>
-      </Tabs>
-    )
+  const handleAddPrescription = (prescription: Prescription) => {
+    setPrescriptions(current => [...current, prescription])
+    setIsNewPrescriptionOpen(false)
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader 
-        currentView={currentUser.role === 'patient' ? patientView : undefined}
-        onNavigate={currentUser.role === 'patient' ? setPatientView : undefined}
-      />
-      <main className="container mx-auto px-4 md:px-6 py-8">
-        {currentUser.role === 'patient' ? renderPatientContent() : renderProviderContent()}
+      <header className="border-b border-border bg-card">
+        <div className="container mx-auto px-6 py-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+              <Pills size={24} weight="bold" className="text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground" style={{ letterSpacing: '-0.02em' }}>
+                MedScript
+              </h1>
+              <p className="text-sm text-muted-foreground">Prescription Manager</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-6 py-8">
+        <div className="space-y-6">
+          <PatientSelector
+            patients={patients}
+            selectedPatientId={selectedPatientId}
+            onSelectPatient={setSelectedPatientId}
+          />
+
+          {selectedPatient ? (
+            <div className="space-y-6">
+              <AllergyManager patient={selectedPatient} />
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-semibold tracking-tight">Active Prescriptions</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {activePrescriptions.length} active medication{activePrescriptions.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => setIsNewPrescriptionOpen(true)}
+                    size="lg"
+                    className="gap-2"
+                  >
+                    <Plus size={20} weight="bold" />
+                    New Prescription
+                  </Button>
+                </div>
+
+                <PrescriptionList
+                  prescriptions={patientPrescriptions}
+                  onDiscontinue={handleDiscontinuePrescription}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-border bg-muted/30 p-12 text-center">
+              <Pills size={48} className="mx-auto mb-4 text-muted-foreground" />
+              <h3 className="mb-2 text-lg font-medium">No Patient Selected</h3>
+              <p className="text-sm text-muted-foreground">
+                Select a patient above to view prescriptions and manage allergies
+              </p>
+            </div>
+          )}
+        </div>
       </main>
+
+      {selectedPatient && (
+        <NewPrescriptionDialog
+          open={isNewPrescriptionOpen}
+          onOpenChange={setIsNewPrescriptionOpen}
+          patient={selectedPatient}
+          activePrescriptions={activePrescriptions}
+          onAddPrescription={handleAddPrescription}
+        />
+      )}
+
+      <Toaster />
     </div>
   )
 }
-
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-      <Toaster />
-    </AuthProvider>
-  )
-}
-
-export default App
