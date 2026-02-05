@@ -1,18 +1,18 @@
 import { Patient, Provider, Appointment, PaymentCharge, LabResult, Case, Task } from './types'
 
-export const DEMO_PATIENTS: Patient[] = [
-  {
     id: 'patient-1',
-    firstName: 'Sarah',
-    lastName: 'Johnson',
-    dateOfBirth: '1985-03-15',
-    email: 'sarah.johnson@email.com',
-    phone: '555-0101',
-    preferredContactMethod: 'sms',
-    conditionType: 'primaryCare',
-    patientStatus: 'active',
-    onboardingSource: 'website',
-    createdAt: '2024-01-15T10:00:00Z',
+   
+    email: 'sarah.jo
+    preferredContactMet
+    patientStatus: 'acti
+    createdAt: '2024-01-15T10:
+    intakeFormCompleted: true,
+  {
+    firstName: 'Michael',
+    dateOfBirth: '1978-07-22',
+    phone: '555-0102',
+    conditionType: 'chronicCare'
+    onboardingSource: 'referral',
     hipaaFormCompleted: true,
     intakeFormCompleted: true,
   },
@@ -126,222 +126,222 @@ export function getDemoAppointments(): Appointment[] {
 
   return [
     {
-      id: 'apt-1',
-      patientId: 'patient-1',
-      providerId: 'provider-1',
-      dateTime: today.toISOString(),
-      location: 'Exam Room 1',
-      reason: 'Annual Physical Examination',
-      status: 'confirmed',
-      confirmedAt: new Date(now.getTime() - 1000 * 60 * 60 * 24).toISOString(),
-    },
+      status: 'sch
     {
-      id: 'apt-2',
-      patientId: 'patient-2',
-      providerId: 'provider-2',
-      dateTime: new Date(today.getTime() + 1000 * 60 * 60 * 2).toISOString(),
-      location: 'Exam Room 2',
-      reason: 'Follow-up: Blood Pressure Management',
-      status: 'scheduled',
-    },
-    {
-      id: 'apt-3',
       patientId: 'patient-3',
-      providerId: 'provider-1',
-      dateTime: new Date(today.getTime() + 1000 * 60 * 60 * 4).toISOString(),
-      location: 'Physical Therapy Suite',
-      reason: 'Physical Therapy Session',
-      status: 'confirmed',
-      confirmedAt: new Date(now.getTime() - 1000 * 60 * 60 * 12).toISOString(),
-    },
+      dateTime: new Date(today.getTi
+      reason: 'Physical Therap
+      confirmedAt: new Date(now.getTime() - 
     {
-      id: 'apt-4',
       patientId: 'patient-4',
-      providerId: 'provider-2',
-      dateTime: in3Days.toISOString(),
-      location: 'Exam Room 3',
-      reason: 'Post-operative Check-up',
-      status: 'pending_confirmation',
-      confirmationSentAt: now.toISOString(),
-    },
+      
+     
+      confirmation
     {
-      id: 'apt-5',
       patientId: 'patient-5',
-      providerId: 'provider-1',
       dateTime: in2Days.toISOString(),
-      location: 'Exam Room 1',
-      reason: 'New Patient Consultation',
-      status: 'pending_confirmation',
-      confirmationSentAt: new Date(now.getTime() - 1000 * 60 * 30).toISOString(),
-    },
+      reason: 'New Patient Con
+      confirmationSentAt: new Date(now.getTime() - 10
   ]
-}
 
-export const DEMO_CHARGES: PaymentCharge[] = [
   {
-    id: 'charge-1',
-    patientId: 'patient-2',
-    chargeType: 'visit',
-    description: 'Office Visit - Follow-up',
-    amount: 250.00,
+    patientId: 'pa
+    description: 'Office Visi
     insuranceCovered: 200.00,
-    patientResponsibility: 50.00,
     paidAmount: 0,
-    balanceDue: 50.00,
-    dateOfService: '2024-02-15T10:00:00Z',
-    createdAt: '2024-02-15T10:30:00Z',
+    dateOfService: '2024-02-15T10:00:00Z'
   },
-  {
     id: 'charge-2',
-    patientId: 'patient-3',
     chargeType: 'procedure',
-    description: 'Physical Therapy Session',
-    amount: 150.00,
-    insuranceCovered: 120.00,
-    patientResponsibility: 30.00,
-    paidAmount: 0,
-    balanceDue: 30.00,
-    dateOfService: '2024-02-20T14:00:00Z',
-    createdAt: '2024-02-20T14:30:00Z',
-  },
+    am
+    p
+    balanceDue: 30
+    createdAt: '2024-02-20T14
   {
-    id: 'charge-3',
     patientId: 'patient-4',
-    chargeType: 'lab',
-    description: 'Blood Work Panel',
-    amount: 300.00,
+    description: 'Blood Work P
     insuranceCovered: 0,
-    patientResponsibility: 300.00,
     paidAmount: 0,
-    balanceDue: 300.00,
     dateOfService: '2024-01-25T09:00:00Z',
-    createdAt: '2024-01-25T09:30:00Z',
   },
-  {
-    id: 'charge-4',
-    patientId: 'patient-1',
-    chargeType: 'copay',
-    description: 'Copayment',
+    i
+    chargeType: 'c
     amount: 35.00,
-    insuranceCovered: 0,
-    patientResponsibility: 35.00,
-    paidAmount: 35.00,
+    patientResponsibility: 35.0
     balanceDue: 0,
-    dateOfService: '2024-03-01T09:00:00Z',
-    createdAt: '2024-03-01T09:15:00Z',
-  },
+    createdAt: '2024-03-01T09:
   {
-    id: 'charge-5',
     patientId: 'patient-5',
-    chargeType: 'visit',
     description: 'New Patient Comprehensive Exam',
-    amount: 350.00,
-    insuranceCovered: 280.00,
-    patientResponsibility: 70.00,
-    paidAmount: 0,
-    balanceDue: 70.00,
-    dateOfService: '2024-03-01T08:00:00Z',
-    createdAt: '2024-03-01T08:30:00Z',
-  },
-]
+    in
+   
+ 
 
-export const DEMO_LAB_RESULTS: LabResult[] = [
+
   {
-    id: 'lab-1',
-    patientId: 'patient-2',
-    testName: 'Complete Blood Count (CBC)',
-    result: 'Within normal limits',
-    status: 'completed',
-    orderedDate: '2024-02-10T09:00:00Z',
-    completedDate: '2024-02-12T14:00:00Z',
+    patientId: 'pat
+    result: 'Within normal 
+    orderedDate: '2024-0
   },
-  {
     id: 'lab-2',
-    patientId: 'patient-4',
-    testName: 'Post-op Wound Culture',
-    result: 'Pending',
+    testName: 'Post-op Wound 
     status: 'pending',
-    orderedDate: '2024-02-25T10:00:00Z',
   },
-  {
     id: 'lab-3',
-    patientId: 'patient-1',
     testName: 'Lipid Panel',
-    result: 'Cholesterol elevated - follow-up recommended',
     status: 'abnormal',
-    orderedDate: '2024-02-01T11:00:00Z',
-    completedDate: '2024-02-05T09:00:00Z',
-  },
+    
 ]
-
-export const DEMO_CASES: Case[] = [
-  {
+export const DEMO_C
     id: 'case-1',
-    patientId: 'patient-2',
-    caseType: 'clinicalConcern',
-    subject: 'Elevated Blood Pressure Reading',
-    description: 'Patient reports elevated BP readings at home (150/95). Requesting medication review.',
-    urgency: 'timeSensitive',
+    caseType: 'clinicalConce
+    description: 'Patient reports elevated B
     status: 'open',
-    assignedProviderId: 'provider-2',
-    createdAt: '2024-03-05T14:00:00Z',
-    updatedAt: '2024-03-05T14:00:00Z',
+    createdAt: '2024-03-05T14
   },
-  {
     id: 'case-2',
-    patientId: 'patient-3',
-    caseType: 'followUp',
-    subject: 'PT Progress Update',
-    description: 'Patient reports improvement in mobility after 3 sessions. Requesting schedule adjustment.',
-    urgency: 'routine',
+    caseType: 'followU
+    description: 'Patient reports improvem
     status: 'awaitingProvider',
-    assignedProviderId: 'provider-1',
-    createdAt: '2024-03-04T10:30:00Z',
-    updatedAt: '2024-03-04T16:00:00Z',
-  },
-]
+    
+  }
 
-export const DEMO_TASKS: Task[] = [
   {
-    id: 'task-1',
     caseId: 'case-1',
-    patientId: 'patient-2',
-    title: 'Review home BP readings and adjust medication',
-    description: 'Patient reporting elevated readings. Review chart and consider medication adjustment.',
-    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-    assignedToProviderId: 'provider-2',
+    title: 'Review home BP readings 
+    dueDate: new Da
     status: 'todo',
-    createdAt: '2024-03-05T14:00:00Z',
-    updatedAt: '2024-03-05T14:00:00Z',
-    createdByWorkflow: 'auto-urgent',
+    updatedAt: '2024-03-05T14:00:0
   },
-  {
     id: 'task-2',
-    patientId: 'patient-4',
-    title: 'Follow up on pending wound culture results',
-    description: 'Check lab results and notify patient of findings.',
-    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(),
-    assignedToProviderId: 'provider-2',
-    status: 'todo',
-    createdAt: '2024-02-25T10:00:00Z',
-    updatedAt: '2024-02-25T10:00:00Z',
-  },
+    title: 'Follow up on pending wound cul
+    dueDate: new Date(Date.now() + 100
+    
+   
 ]
-
-export async function initializeDemoData(
-  setPatients: (fn: (current: Patient[]) => Patient[]) => void,
-  setProviders: (fn: (current: Provider[]) => Provider[]) => void,
-  setAppointments: (fn: (current: Appointment[]) => Appointment[]) => void,
-  setCharges: (fn: (current: PaymentCharge[]) => PaymentCharge[]) => void,
-  setLabResults: (fn: (current: LabResult[]) => LabResult[]) => void,
-  setCases: (fn: (current: Case[]) => Case[]) => void,
-  setTasks: (fn: (current: Task[]) => Task[]) => void
+export async function initi
+  setProviders: (fn: (cu
+  setCharges: (fn: (current: 
+  setCases: (fn: (
 ) {
-  setPatients((current) => current?.length > 0 ? current : DEMO_PATIENTS)
-  setProviders((current) => current?.length > 0 ? current : DEMO_PROVIDERS)
-  setAppointments((current) => current?.length > 0 ? current : getDemoAppointments())
-  setCharges((current) => current?.length > 0 ? current : DEMO_CHARGES)
-  setLabResults((current) => current?.length > 0 ? current : DEMO_LAB_RESULTS)
-  setCases((current) => current?.length > 0 ? current : DEMO_CASES)
-  setTasks((current) => current?.length > 0 ? current : DEMO_TASKS)
+  setProviders((current) => curre
+  setCharges((current)
+  setCases((curren
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
