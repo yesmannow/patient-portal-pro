@@ -2,134 +2,134 @@ import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { CreditCard, Receipt, CheckCircle, XC
 import { PaymentCharge, Payment, Patient } from '@/lib/types'
 import { CreditCard, Receipt, CheckCircle, XCircle } from '@phosphor-icons/react'
 import { PaymentDialog } from './PaymentDialog'
-import { format } from 'date-fns'
-
-interface PaymentHistoryProps {
-  patientId: string
 }
+
+  visit: 'Office Visit',
+  patientId: string
+ 
 
 const chargeTypeLabels: Record<string, string> = {
   visit: 'Office Visit',
-  procedure: 'Procedure',
-  lab: 'Lab Work',
-  medication: 'Medication',
-  copay: 'Copay',
-}
 
-export function PaymentHistory({ patientId }: PaymentHistoryProps) {
-  const [charges] = useKV<PaymentCharge[]>('payment-charges', [])
-  const [payments, setPayments] = useKV<Payment[]>('payments', [])
-  const [patients, setPatients] = useKV<Patient[]>('patients', [])
-  const [selectedCharge, setSelectedCharge] = useState<PaymentCharge | null>(null)
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
 
-  const patientCharges = (charges || [])
-    .filter(c => c.patientId === patientId)
-    .sort((a, b) => new Date(b.dateOfService).getTime() - new Date(a.dateOfService).getTime())
-
-  const totalBalanceDue = patientCharges.reduce((sum, c) => sum + c.balanceDue, 0)
-
-  const handlePayNow = (charge: PaymentCharge) => {
-    setSelectedCharge(charge)
-    setPaymentDialogOpen(true)
+    setSelectedCharge(charg
   }
+ 
 
-  const handlePaymentComplete = (payment: Payment) => {
-    setPayments((current) => [...(current || []), payment])
-    setPaymentDialogOpen(false)
-    setSelectedCharge(null)
   }
-
   return (
-    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Payment History</h2>
-          <p className="text-muted-foreground mt-1">View charges and manage your account balance</p>
+          <h2 className="text-2xl font-bold tracking-tight">Paymen
         </div>
-        {totalBalanceDue > 0 && (
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">Total Balance Due</p>
-            <p className="text-3xl font-bold text-accent">${totalBalanceDue.toFixed(2)}</p>
-          </div>
+
         )}
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Outstanding Balance</CardTitle>
-            <Receipt className="w-4 h-4 text-muted-foreground" />
+
           </CardHeader>
+
+              {patientCharges.filter(c => c.balance
+          </CardContent>
+
+   
+
           <CardContent>
-            <div className="text-2xl font-bold">${totalBalanceDue.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {patientCharges.filter(c => c.balanceDue > 0).length} unpaid charges
+              ${patientCharges.reduce((sum, c) => sum + c.p
+            <p className="text-
             </p>
-          </CardContent>
-        </Card>
+   
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Paid YTD</CardTitle>
-            <CheckCircle className="w-4 h-4 text-muted-foreground" />
+          
           </CardHeader>
-          <CardContent>
             <div className="text-2xl font-bold">
-              ${patientCharges.reduce((sum, c) => sum + c.paidAmount, 0).toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {(payments || []).filter(p => p.patientId === patientId && p.status === 'completed').length} payments
-            </p>
+            <
           </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Insurance Coverage</CardTitle>
-            <CreditCard className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ${patientCharges.reduce((sum, c) => sum + c.insuranceCovered, 0).toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Year to date</p>
-          </CardContent>
-        </Card>
       </div>
-
       <Card>
-        <CardHeader>
-          <CardTitle>Recent Charges</CardTitle>
-          <CardDescription>Detailed breakdown of charges and payments</CardDescription>
+          <CardTitle>Recent Charg
         </CardHeader>
-        <CardContent>
           {patientCharges.length === 0 ? (
-            <div className="text-center py-12">
-              <Receipt className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duotone" />
-              <p className="text-muted-foreground">No charges on record</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {patientCharges.map((charge) => (
-                <Card key={charge.id} className="border-l-4" style={{ borderLeftColor: charge.balanceDue > 0 ? 'oklch(0.60 0.20 25)' : 'oklch(0.60 0.12 145)' }}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline" className="text-xs">
-                            {chargeTypeLabels[charge.chargeType]}
-                          </Badge>
+              <Receipt className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duo
+            </di
+          
+            
+
+                        <div className="flex item
+              
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(charge.dateOfService), 'MMM d, yyyy')}
                           </span>
-                        </div>
-                        <p className="font-medium mb-2">{charge.description}</p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <p className="font-medium mb-2">{charge.d
+                       
+                       
+                          <div>
+                            <p className="font-semibold text-g
+                          <div>
+                
+                        
+               
+
+              
+                          <Button onClick={() => handlePayNow(charge)} className="bg-accent 
+                            Pay Now
+                        ) : (
+                       
+                       
+                      </div>
+                  </CardContent>
+              ))}
+          )}
+      </Card>
+      {selectedC
+          open={paymentD
+          charg
+
+      )}
+  )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                           <div>
                             <p className="text-muted-foreground text-xs">Total Charge</p>
                             <p className="font-semibold">${charge.amount.toFixed(2)}</p>
