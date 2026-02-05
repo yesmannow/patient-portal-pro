@@ -25,34 +25,7 @@ const statusLabels: Record<string, string> = {
   resolved: 'Resolved',
 };
 
-const urgencyColors: Record<string, string> = {
-  urgent: 'border-l-red-600',
-  timeSensitive: 'border-l-amber-500',
-  routine: 'border-l-blue-500',
-};
-
-const urgencyLabels: Record<string, string> = {
-  urgent: 'Urgent',
-  timeSensitive: 'Time-Sensitive',
-  routine: 'Routine',
-};
-
-const caseTypeLabels: Record<string, string> = {
-  question: 'Question',
-  followUp: 'Follow-Up',
-  billing: 'Billing',
-  clinicalConcern: 'Clinical Concern',
-  admin: 'Administrative',
-};
-
-export function PatientDashboard() {
-  const { currentUser } = useAuth();
-  const [patients] = useKV<Patient[]>('patients', []);
-  const [cases] = useKV<Case[]>('cases', []);
-  const [appointments] = useKV<Appointment[]>('appointments', []);
-  const [newCaseOpen, setNewCaseOpen] = useState(false);
-  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
-
+\
   const currentPatient = patients?.find((p) => p.email === currentUser?.email);
   const myCases = (cases || [])
     .filter((c) => c.patientId === currentPatient?.id)
@@ -133,20 +106,20 @@ export function PatientDashboard() {
               </div>
             ) : (
               myCases.slice(0, 5).map((caseItem) => (
-                <motion.div
+                  key={case
                   key={caseItem.id}
-                  whileHover={{ scale: 1.01 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  <Card
-                    className={`cursor-pointer border-l-4 ${urgencyColors[caseItem.urgency]} hover:border-primary/30 hover:shadow-md transition-all`}
-                    onClick={() => setSelectedCase(caseItem)}
+                    className={`cursor-pointer
                   >
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="outline" className="text-xs">
+                 
+                       
+                              {caseTypeLabels[caseItem.caseType]}
+                            <Badge variant="secondary" classN
+                   
+                          <p className="text-sm f
+                          </p>
+                            {format(new Date(cas
+                        </div>
+                          {caseItem.status === 'resolved' && <CheckCircle
                               {caseTypeLabels[caseItem.caseType]}
                             </Badge>
                             <Badge variant="secondary" className="text-xs">
@@ -159,42 +132,42 @@ export function PatientDashboard() {
                           <p className="text-xs text-muted-foreground mt-2">
                             {format(new Date(caseItem.createdAt), 'MMM d, yyyy')}
                           </p>
-                        </div>
+            <CardTitle>Upcomin
                         <Badge className={statusColors[caseItem.status]}>
                           {caseItem.status === 'resolved' && <CheckCircle className="w-3 h-3 mr-1" weight="fill" />}
                           {statusLabels[caseItem.status]}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))
+                        </div>
+                          {f
+                        <p classNa
+                    </div
+                </Card>
             )}
-          </CardContent>
-        </Card>
+        </Card
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Appointments</CardTitle>
-            <CardDescription>Your scheduled visits</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {myAppointments.length === 0 ? (
-              <div className="text-center py-12">
-                <CalendarBlank className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duotone" />
-                <p className="text-muted-foreground">No upcoming appointments</p>
-              </div>
-            ) : (
-              myAppointments.map((appointment) => (
-                <Card key={appointment.id}>
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <CalendarBlank className="w-4 h-4 text-primary" weight="duotone" />
-                          <p className="font-semibold">
-                            {format(new Date(appointment.dateTime), 'EEEE, MMMM d')}
-                          </p>
+        <>
+
+              
+              onOpenCh
+          )}
+      )}
+  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                           {format(new Date(appointment.dateTime), 'h:mm a')} • {appointment.location}
