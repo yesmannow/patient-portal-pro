@@ -1,15 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Toaster } from '@/components/ui/sonner'
-import { VideoCamera, User } from '@phosphor-icons/react'
+import { VideoCamera, User, Info } from '@phosphor-icons/react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { WaitingRoom } from '@/components/telehealth/WaitingRoom'
 import { Telehealth } from '@/components/telehealth/Telehealth'
 import type { TelehealthSession, AppointmentStatus } from '@/types/telehealth'
+import type { RuleAlert, ClinicalContext } from '@/types/clinical'
+import { evaluateRules } from '@/lib/clinicalRules'
+import { getMockPatient } from '@/lib/mockPatientData'
+import { ClinicalAlertsSidebar } from '@/components/clinical/ClinicalAlertsSidebar'
 
-type ViewMode = 'demo-select' | 'waiting-room' | 'telehealth-session'
+type ViewMode = 'demo-select' | 'waiting-room' | 'telehealth-session' | 'telehealth-with-alerts'
 
 export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('demo-select')
@@ -17,6 +21,8 @@ export default function App() {
   const [isProviderPresent, setIsProviderPresent] = useState(false)
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [sessions, setSessions] = useKV<TelehealthSession[]>('telehealth-sessions', [])
+  const [clinicalAlerts, setClinicalAlerts] = useKV<RuleAlert[]>('clinical-alerts', [])
+  const [showAlertsSidebar, setShowAlertsSidebar] = useState(false)
 
   const mockSession: TelehealthSession = {
     id: 'session-001',
@@ -48,6 +54,53 @@ export default function App() {
   const handleJoinSession = (stream: MediaStream) => {
     setLocalStream(stream)
     setViewMode('telehealth-session')
+    
+    const patient = getMockPatient(mockSession.patientId)
+    if (patient && isProvider) {
+      const context: ClinicalContext = {
+        sessionId: mockSession.id,
+        encounterId: mockSession.appointmentId,
+        providerId: mockSession.providerId,
+        providerName: mockSession.providerName,
+        timestamp: new Date()
+      }
+      
+      const alerts = evaluateRules(patient, context)
+      if (alerts.length > 0) {
+        setClinicalAlerts((current) => [...alerts, ...current])
+        setShowAlertsSidebar(true)
+      }
+    }
+  }
+
+  const handleAcknowledgeAlert = (alertId: string) => {
+    setClinicalAlerts((current) =>
+      current.map((alert) =>
+        alert.id === alertId
+          ? {
+              ...alert,
+              status: 'acknowledged',
+              acknowledgedAt: new Date(),
+              acknowledgedBy: mockSession.providerName
+            }
+          : alert
+      )
+    )
+  }
+
+  const handleDismissAlert = (alertId: string) => {
+    setClinicalAlerts((current) =>
+      current.map((alert) =>
+        alert.id === alertId
+          ? {
+              ...alert,
+              status: 'dismissed',
+              dismissedAt: new Date(),
+              dismissedBy: mockSession.providerName
+            }
+          : alert
+      )
+    )
   }
 
   const handleEndSession = (status: AppointmentStatus) => {
@@ -94,9 +147,24 @@ export default function App() {
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-3xl font-bold mb-3">Choose Your Role</h2>
-                <p className="text-muted-foreground">
-                  Experience the telehealth platform from either perspective
+                <p className="text-muted-foreground mb-6">
+                  Experience the telehealth platform with integrated Clinical Decision Rules (CDR) engine
                 </p>
+                <div className="max-w-2xl mx-auto bg-accent/10 border border-accent/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                      <Info size={20} className="text-accent" weight="fill" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-semibold text-sm mb-1">Clinical Intelligence Demo</h3>
+                      <p className="text-xs text-muted-foreground">
+                        This demo showcases real-time clinical alerts during telehealth sessions. When joining as a provider, 
+                        the system evaluates patient data and triggers ONC-compliant alerts for preventive care gaps, 
+                        chronic disease management, and medication safety.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
@@ -114,15 +182,19 @@ export default function App() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-start gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                        <p>Real-time clinical decision support</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
+                        <p>ONC-compliant quality measure alerts</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
                         <p>Clinical note-taking mode</p>
                       </div>
                       <div className="flex items-start gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
                         <p>Invite specialists to session</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
-                        <p>Update appointment status</p>
                       </div>
                       <div className="flex items-start gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
@@ -208,12 +280,25 @@ export default function App() {
       )}
 
       {viewMode === 'telehealth-session' && localStream && (
-        <Telehealth
-          session={mockSession}
-          localStream={localStream}
-          isProvider={isProvider}
-          onEndSession={handleEndSession}
-        />
+        <div className="flex h-screen">
+          <div className="flex-1">
+            <Telehealth
+              session={mockSession}
+              localStream={localStream}
+              isProvider={isProvider}
+              onEndSession={handleEndSession}
+            />
+          </div>
+          {isProvider && (
+            <ClinicalAlertsSidebar
+              alerts={clinicalAlerts.filter(a => a.sessionId === mockSession.id || a.patientId === mockSession.patientId)}
+              onAcknowledge={handleAcknowledgeAlert}
+              onDismiss={handleDismissAlert}
+              isCollapsed={!showAlertsSidebar}
+              onToggleCollapse={() => setShowAlertsSidebar(!showAlertsSidebar)}
+            />
+          )}
+        </div>
       )}
 
       <Toaster />

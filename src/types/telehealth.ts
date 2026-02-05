@@ -6,27 +6,26 @@ export type AppointmentStatus = 'completed' | 'no-show' | 'cancelled'
 
 export interface Participant {
   id: string
-  stream?: Med
+  name: string
+  role: ParticipantRole
+  stream?: MediaStream
+  videoEnabled: boolean
   audioEnabled: boolean
   isPresent: boolean
+}
 
+export interface TelehealthSession {
   id: string
-  patientName: stri
-  providerName: stri
- 
-
+  patientId: string
+  patientName: string
+  providerId: string
+  providerName: string
+  appointmentId: string
+  status: SessionStatus
+  startTime: Date
+  endTime?: Date
+  participants: Participant[]
 }
-export inter
-  expiresAt: Date
-  participantRole: Pa
-}
-export interface Devic
-  microphone: boolean
-}
-
-
-
-
 
 export interface InviteLink {
   token: string
@@ -41,10 +40,3 @@ export interface DevicePermissions {
   microphone: boolean
   screen?: boolean
 }
-
-
-
-
-
-
-
