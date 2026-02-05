@@ -1,7 +1,7 @@
 import { Patient, Provider, Appointment, PaymentCharge, LabResult, Case, Task } from './types'
 
-export const DEMO_PATIENTS: Patient[] = [
-  {
+    id: 'patient-1',
+   
     id: 'patient-1',
     firstName: 'Sarah',
     lastName: 'Johnson',
@@ -14,7 +14,7 @@ export const DEMO_PATIENTS: Patient[] = [
     onboardingSource: 'website',
     createdAt: '2024-01-15T10:30:00Z',
     hipaaFormCompleted: true,
-    intakeFormCompleted: true,
+    firstName: 'Michael',
   },
   {
     id: 'patient-2',
@@ -47,21 +47,21 @@ export const DEMO_PATIENTS: Patient[] = [
     intakeFormCompleted: true,
   },
   {
-    id: 'patient-4',
-    firstName: 'James',
-    lastName: 'Wilson',
-    dateOfBirth: '1965-05-30',
-    email: 'james.wilson@email.com',
-    phone: '555-0104',
-    preferredContactMethod: 'voice',
-    conditionType: 'postOp',
-    patientStatus: 'active',
-    onboardingSource: 'intakeForm',
-    createdAt: '2024-01-20T11:45:00Z',
+    phone: '555-0104
+    conditionType: 'pos
+    onboardingSource: '
     hipaaFormCompleted: true,
-    intakeFormCompleted: true,
   },
-  {
+    id: 'patient-5',
+    lastName: 'Anderson',
+    email: 'lisa.anderson@em
+    preferredContactMethod: 
+    patientStatus: 'new',
+    createdAt: '2024-03-01T08:00:00Z',
+    intakeFormCompleted: fals
+]
+expo
+   
     id: 'patient-5',
     firstName: 'Lisa',
     lastName: 'Anderson',
@@ -126,252 +126,252 @@ export const DEMO_PROVIDERS: Provider[] = [
   },
 ]
 
-export function getDemoAppointments(): Appointment[] {
-  const now = new Date()
-  const today = new Date(now)
-  today.setHours(9, 0, 0, 0)
-  
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  
-  const in3Days = new Date(today)
-  in3Days.setDate(in3Days.getDate() + 3)
-  in3Days.setHours(14, 0, 0, 0)
-  
-  const in2Days = new Date(today)
-  in2Days.setDate(in2Days.getDate() + 2)
-  in2Days.setHours(10, 30, 0, 0)
-
-  return [
-    {
-      id: 'appointment-1',
-      patientId: 'patient-1',
       providerId: 'provider-1',
-      dateTime: new Date(today.getTime() + 3600000).toISOString(),
-      location: 'Exam Room 1',
-      reason: 'Annual Physical',
+      location: 'Exam Ro
       status: 'confirmed',
-      confirmedAt: new Date(now.getTime() - 86400000).toISOString(),
     },
-    {
-      id: 'appointment-2',
-      patientId: 'patient-2',
+  
       providerId: 'provider-2',
-      dateTime: new Date(today.getTime() + 7200000).toISOString(),
       location: 'Exam Room 2',
-      reason: 'Diabetes Follow-up',
-      status: 'scheduled',
-    },
+  
     {
-      id: 'appointment-3',
       patientId: 'patient-3',
-      providerId: 'provider-1',
-      dateTime: new Date(today.getTime() + 10800000).toISOString(),
-      location: 'Physical Therapy',
-      reason: 'Physical Therapy Session',
-      status: 'confirmed',
-      confirmedAt: new Date(now.getTime() - 172800000).toISOString(),
-    },
+      dateTime: new Date(today.
+  
+      confirmedAt: new Date(now.g
     {
-      id: 'appointment-4',
       patientId: 'patient-4',
-      providerId: 'provider-2',
-      dateTime: in3Days.toISOString(),
-      location: 'Exam Room 3',
-      reason: 'Post-Operative Check',
-      status: 'pending_confirmation',
-      confirmationSentAt: new Date(now.getTime() - 3600000).toISOString(),
-    },
+
+      reas
+     
     {
-      id: 'appointment-5',
       patientId: 'patient-5',
-      providerId: 'provider-1',
-      dateTime: in2Days.toISOString(),
-      location: 'Exam Room 1',
+      dateTime: in2Days.toISOSt
       reason: 'New Patient Consultation',
-      status: 'scheduled',
-      confirmationSentAt: new Date(now.getTime() - 10800000).toISOString(),
-    },
+      confirmationSentAt: new 
   ]
-}
 
-export const DEMO_CHARGES: PaymentCharge[] = [
   {
-    id: 'charge-1',
-    patientId: 'patient-1',
-    chargeType: 'visit',
-    description: 'Office Visit - Annual Physical',
-    amount: 250.00,
-    insuranceCovered: 200.00,
-    patientResponsibility: 50.00,
+    pa
+    d
+    insuranceCovered: 200.
     paidAmount: 0,
-    balanceDue: 50.00,
-    dateOfService: '2024-02-15T10:00:00Z',
-    createdAt: '2024-02-15T12:00:00Z',
+    dateOfService: '2024-02-15T
   },
-  {
     id: 'charge-2',
-    patientId: 'patient-2',
     chargeType: 'procedure',
-    description: 'Blood Work - Comprehensive Metabolic Panel',
     amount: 450.00,
-    insuranceCovered: 300.00,
-    patientResponsibility: 150.00,
-    paidAmount: 0,
-    balanceDue: 150.00,
-    dateOfService: '2024-02-20T14:30:00Z',
-    createdAt: '2024-02-20T16:00:00Z',
-  },
+    pa
+    b
+    createdAt: '2024-02-20
   {
-    id: 'charge-3',
     patientId: 'patient-3',
-    chargeType: 'visit',
     description: 'Physical Therapy Session',
-    amount: 125.00,
     insuranceCovered: 100.00,
-    patientResponsibility: 25.00,
     paidAmount: 25.00,
-    balanceDue: 0,
-    dateOfService: '2024-02-28T11:00:00Z',
-    createdAt: '2024-02-28T13:00:00Z',
+    dateOfService: '2024-0
   },
-  {
-    id: 'charge-4',
-    patientId: 'patient-4',
-    chargeType: 'lab',
-    description: 'Blood Work Panel',
+    id
+    c
     amount: 180.00,
-    insuranceCovered: 180.00,
     patientResponsibility: 0,
-    paidAmount: 0,
     balanceDue: 0,
-    dateOfService: '2024-01-25T09:00:00Z',
     createdAt: '2024-01-25T11:00:00Z',
-  },
   {
-    id: 'charge-5',
     patientId: 'patient-5',
-    chargeType: 'copay',
     description: 'New Patient Copay',
-    amount: 35.00,
     insuranceCovered: 0,
-    patientResponsibility: 35.00,
-    paidAmount: 0,
-    balanceDue: 35.00,
-    dateOfService: '2024-03-01T09:00:00Z',
-    createdAt: '2024-03-01T09:30:00Z',
+    pa
+    d
   },
-  {
     id: 'charge-6',
-    patientId: 'patient-5',
     chargeType: 'visit',
-    description: 'New Patient Comprehensive Exam',
     amount: 350.00,
-    insuranceCovered: 280.00,
-    patientResponsibility: 70.00,
-    paidAmount: 0,
+    patientResponsibility: 70.
     balanceDue: 70.00,
-    dateOfService: '2024-03-01T09:00:00Z',
-    createdAt: '2024-03-01T11:00:00Z',
-  },
+    createdAt: '2024-03-01
 ]
+export
+   
+ 
 
-export const DEMO_LAB_RESULTS: LabResult[] = [
-  {
-    id: 'lab-1',
-    patientId: 'patient-1',
-    testName: 'Complete Blood Count',
-    result: 'Within normal limits',
-    status: 'completed',
-    orderedDate: '2024-02-15T10:00:00Z',
     completedDate: '2024-02-16T14:00:00Z',
-  },
   {
-    id: 'lab-2',
-    patientId: 'patient-4',
-    testName: 'Post-op Wound Culture',
-    result: 'Pending analysis',
-    status: 'pending',
-    orderedDate: '2024-01-25T09:00:00Z',
-  },
+    patientId: 'pat
+    result: 'Pending analys
+    orderedDate: '2024-0
   {
-    id: 'lab-3',
-    patientId: 'patient-2',
-    testName: 'Lipid Panel',
-    result: 'Elevated LDL cholesterol',
-    status: 'abnormal',
-    orderedDate: '2024-02-20T14:30:00Z',
-    completedDate: '2024-02-21T10:00:00Z',
+    patientId: 'pat
+    result: 'Elevated LDL cho
+    orderedDate: '2024-02-20T14:3
   },
-]
 
-export const DEMO_CASES: Case[] = [
   {
-    id: 'case-1',
     patientId: 'patient-2',
-    caseType: 'clinicalConcern',
-    subject: 'Elevated Blood Pressure',
-    description: 'Patient reports elevated BP readings at home (150/95). Requesting medication review.',
-    urgency: 'timeSensitive',
-    status: 'open',
-    assignedProviderId: 'provider-2',
-    createdAt: '2024-03-05T14:30:00Z',
-    updatedAt: '2024-03-05T14:30:00Z',
-  },
+    
+   
+    assignedProvide
+    updatedAt: '2024-03-05T
   {
-    id: 'case-2',
     patientId: 'patient-3',
-    caseType: 'followUp',
-    subject: 'PT Progress Update',
-    description: 'Patient reports improvement in shoulder mobility after 3 sessions.',
+    subject: 'PT Pr
     urgency: 'routine',
-    status: 'awaitingProvider',
-    assignedProviderId: 'provider-1',
-    createdAt: '2024-03-03T11:00:00Z',
-    updatedAt: '2024-03-03T11:00:00Z',
-  },
+    assignedProviderId: 'provider-
+    updatedAt: '20
 ]
-
 export const DEMO_TASKS: Task[] = [
-  {
     id: 'task-1',
-    caseId: 'case-1',
-    patientId: 'patient-2',
-    title: 'Review home BP readings and adjust medication',
-    description: 'Patient reports elevated BP at home. Review trends and consider medication adjustment.',
-    dueDate: new Date(Date.now() + 86400000).toISOString(),
-    assignedToProviderId: 'provider-2',
-    status: 'todo',
-    createdAt: '2024-03-05T14:00:00Z',
-    updatedAt: '2024-03-05T14:00:00Z',
+    
+   
+    assignedToProvi
+    createdAt: '2024-03-05T
   },
-  {
     id: 'task-2',
-    patientId: 'patient-4',
-    title: 'Follow up on pending wound culture results',
-    description: 'Check lab results for post-op wound culture and contact patient if needed.',
-    dueDate: new Date(Date.now() + 172800000).toISOString(),
-    assignedToProviderId: 'provider-2',
+    title: 'Follow 
+    dueDate: new Date(Date.no
     status: 'todo',
-    createdAt: '2024-03-04T09:00:00Z',
-    updatedAt: '2024-03-04T09:00:00Z',
-  },
+    updatedAt: '2024-0
 ]
-
 export async function initializeDemoData(
-  setPatients: (fn: (current: Patient[]) => Patient[]) => void,
-  setProviders: (fn: (current: Provider[]) => Provider[]) => void,
-  setAppointments: (fn: (current: Appointment[]) => Appointment[]) => void,
-  setCharges: (fn: (current: PaymentCharge[]) => PaymentCharge[]) => void,
-  setLabResults: (fn: (current: LabResult[]) => LabResult[]) => void,
-  setCases: (fn: (current: Case[]) => Case[]) => void,
-  setTasks: (fn: (current: Task[]) => Task[]) => void
+  setProviders: (fn: (current: Provide
+  se
+  s
 ) {
-  setPatients((current) => current.length === 0 ? DEMO_PATIENTS : current)
-  setProviders((current) => current.length === 0 ? DEMO_PROVIDERS : current)
-  setAppointments((current) => current.length === 0 ? getDemoAppointments() : current)
-  setCharges((current) => current.length === 0 ? DEMO_CHARGES : current)
-  setLabResults((current) => current.length === 0 ? DEMO_LAB_RESULTS : current)
-  setCases((current) => current.length === 0 ? DEMO_CASES : current)
-  setTasks((current) => current.length === 0 ? DEMO_TASKS : current)
+  setProviders((current) =>
+  setCharges((current)
+  setCases((current) => current.leng
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
