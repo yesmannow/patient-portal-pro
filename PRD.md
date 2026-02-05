@@ -82,6 +82,48 @@ This platform includes role-based multi-view dashboards, workflow automation eng
 - **Progression**: Patient clicks "Book Appointment" → Views calendar filtered by provider availability → Selects date and time → Enters reason for visit → Confirms booking → Appointment created → Confirmation task auto-generated for staff → Patient receives confirmation
 - **Success criteria**: Calendar shows only available slots; appointment saves correctly; task automatically created for staff; no double-booking possible
 
+### Role-Based Access Control (RBAC)
+- **Functionality**: Granular role-based dashboard views for Front Desk, Nurse, Doctor, and Billing staff; each role sees only relevant features and data tailored to their job duties
+- **Purpose**: Eliminates "click fatigue" by removing irrelevant features; improves efficiency by presenting role-specific workflows; protects sensitive data through role segregation
+- **Trigger**: Provider logs in and selects role; system renders appropriate dashboard view
+- **Progression**: Provider selects role at login → System loads role-specific navigation tabs → Dashboard displays relevant features (Front Desk: Schedule with hover profiles, confirmations, VoIP | Nurse: Rooming queue, tasks, VoIP | Doctor: Cases, tasks, availability, analytics, forms, templates, VoIP | Billing: Billing dashboard, analytics, VoIP)
+- **Success criteria**: Each role sees only their designated features; unauthorized features are not rendered; workflow efficiency improves through focused UI
+
+### Hover-Active Schedule (Front Desk)
+- **Functionality**: Front Desk schedule displays today's appointments with hover-triggered mini-profile popups showing patient balance, missing forms (HIPAA/Intake), and visit reason
+- **Purpose**: Revenue protection by ensuring staff never miss outstanding balances during check-in; compliance by flagging missing forms before patient is roomed
+- **Trigger**: Front Desk staff hovers mouse over patient name in schedule
+- **Progression**: Front Desk opens schedule → Views today's appointments → Hovers over patient name → Mini-profile popup appears showing balance (red if >$0), form status (red flags for missing HIPAA/Intake), and visit reason
+- **Success criteria**: Popup displays instantly on hover; balance shown in red when >$0; missing forms clearly flagged; visit reason easily visible
+
+### 72-Hour Smart Confirmation Automation
+- **Functionality**: Automated system triggers transactional SMS 72 hours before appointments; patient replies "1" to confirm or "2" to reschedule; confirmation automatically updates appointment status to "confirmed" (green in schedule)
+- **Purpose**: Reduces no-shows by proactive confirmation; eliminates manual phone call workload; keeps schedule optimized
+- **Trigger**: System automatically checks appointments every minute; sends SMS when appointment is 72 hours away
+- **Progression**: Appointment within 72 hours → System sends SMS "Reply 1 to Confirm or 2 to Reschedule" → Patient replies "1" → Appointment status changes to "confirmed" → Front Desk schedule shows green badge → Staff knows patient is coming
+- **Success criteria**: SMS trigger fires at 72 hours; patient "1" response changes status to "confirmed"; schedule badge turns green; "2" response notifies staff for follow-up
+
+### VoIP Screen Pop Integration
+- **Functionality**: When incoming call detected from patient phone number, system instantly displays full clinical profile popup including upcoming appointments, outstanding labs, and account balance
+- **Purpose**: Patient satisfaction through personalized greeting; staff efficiency by eliminating manual lookup; instant context for better service
+- **Trigger**: VoIP system detects incoming call; phone number matches patient record
+- **Progression**: Incoming call detected → System matches phone number to patient → Screen pop displays patient profile, upcoming appointments, outstanding lab results, and account balance → Staff greets patient by name with instant context → Call completes → Profile closes
+- **Success criteria**: Screen pop appears within 1 second of call detection; patient correctly matched by phone; all relevant data displayed (appointments, labs, balance); staff can immediately reference information
+
+### Nurse Rooming Queue
+- **Functionality**: Displays today's confirmed appointments ready for vital sign collection; nurses can record BP, heart rate, temperature, weight, and height directly from queue
+- **Purpose**: Streamlines patient rooming process; ensures vitals are recorded before provider sees patient; improves clinical workflow
+- **Trigger**: Nurse opens Rooming Queue tab; views patients scheduled for today
+- **Progression**: Nurse views queue → Selects patient → Opens vitals dialog → Records measurements → Saves → Badge changes to "Vitals Recorded" → Patient ready for provider
+- **Success criteria**: Queue shows confirmed appointments; vitals dialog validates inputs; recorded vitals persist; visual indicator shows completion
+
+### Billing Dashboard with Claim Denials
+- **Functionality**: Billing staff view showing outstanding charges, recent payments, and claim denials requiring follow-up; financial metrics and patient balance tracking
+- **Purpose**: Centralized revenue cycle management; claim denial queue ensures timely resubmission; financial visibility for practice management
+- **Trigger**: Billing staff logs in and views dashboard
+- **Progression**: Billing staff opens dashboard → Views key metrics (outstanding balance, total collected, denials) → Switches between tabs (Outstanding Charges, Recent Payments, Claim Denials) → Reviews denial details → Takes action on claims
+- **Success criteria**: Metrics calculate correctly; charges sorted by balance; payments show completion status; denials clearly flagged for action
+
 ## Edge Case Handling
 
 - **Missing Patient Data**: Form submissions and task creation gracefully handle incomplete patient records by creating placeholder entries and flagging for manual review.

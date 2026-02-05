@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { LoginPage } from '@/components/LoginPage'
 import { PatientDashboard } from '@/components/PatientDashboard'
@@ -19,7 +19,8 @@ import { AppHeader } from '@/components/AppHeader'
 import { Toaster } from '@/components/ui/sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useKV } from '@github/spark/hooks'
-import { Patient, Provider } from '@/lib/types'
+import { Patient, Provider, Appointment, PaymentCharge, LabResult, Case, Task } from '@/lib/types'
+import { initializeDemoData } from '@/lib/demo-data'
 
 type PatientView = 'dashboard' | 'profile' | 'forms'
 type ProviderView = 'dashboard' | 'tasks' | 'analytics' | 'forms' | 'templates' | 'availability' | 'automation' | 'voip'
@@ -28,8 +29,25 @@ function AppContent() {
   const { currentUser, providerRole } = useAuth()
   const [patientView, setPatientView] = useState<PatientView>('dashboard')
   const [providerView, setProviderView] = useState<ProviderView>('dashboard')
-  const [patients] = useKV<Patient[]>('patients', [])
-  const [providers] = useKV<Provider[]>('providers', [])
+  const [patients, setPatients] = useKV<Patient[]>('patients', [])
+  const [providers, setProviders] = useKV<Provider[]>('providers', [])
+  const [appointments, setAppointments] = useKV<Appointment[]>('appointments', [])
+  const [charges, setCharges] = useKV<PaymentCharge[]>('payment-charges', [])
+  const [labResults, setLabResults] = useKV<LabResult[]>('lab-results', [])
+  const [cases, setCases] = useKV<Case[]>('cases', [])
+  const [tasks, setTasks] = useKV<Task[]>('tasks', [])
+
+  useEffect(() => {
+    initializeDemoData(
+      setPatients,
+      setProviders,
+      setAppointments,
+      setCharges,
+      setLabResults,
+      setCases,
+      setTasks
+    )
+  }, [])
 
   if (!currentUser) {
     return <LoginPage />
