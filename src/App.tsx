@@ -8,6 +8,7 @@ import { ProviderDashboard } from '@/components/ProviderDashboard'
 import { TaskBoard } from '@/components/TaskBoard'
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard'
 import { FormBuilder } from '@/components/FormBuilder'
+import { ResponseTemplateManager } from '@/components/ResponseTemplateManager'
 import { AppHeader } from '@/components/AppHeader'
 import { Toaster } from '@/components/ui/sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -15,7 +16,7 @@ import { useKV } from '@github/spark/hooks'
 import { Patient } from '@/lib/types'
 
 type PatientView = 'dashboard' | 'profile' | 'forms'
-type ProviderView = 'dashboard' | 'tasks' | 'analytics' | 'forms'
+type ProviderView = 'dashboard' | 'tasks' | 'analytics' | 'forms' | 'templates'
 
 function AppContent() {
   const { currentUser } = useAuth()
@@ -44,11 +45,12 @@ function AppContent() {
   const renderProviderContent = () => {
     return (
       <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
-        <TabsList className="grid w-full max-w-2xl grid-cols-4">
+        <TabsList className="grid w-full max-w-3xl grid-cols-5">
           <TabsTrigger value="dashboard">Cases</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="forms">Form Builder</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
         </TabsList>
         
         <TabsContent value="dashboard" className="space-y-0">
@@ -65,6 +67,10 @@ function AppContent() {
         
         <TabsContent value="forms" className="space-y-0">
           <FormBuilder />
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-0">
+          <ResponseTemplateManager />
         </TabsContent>
       </Tabs>
     )

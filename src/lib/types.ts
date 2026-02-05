@@ -186,3 +186,14 @@ export interface AnalyticsInsight {
   actionText?: string
   generatedAt: string
 }
+
+export interface ResponseTemplate {
+  id: string
+  name: string
+  category: CaseType
+  promptKeywords: string[]
+  templateText: string
+  useAI: boolean
+  createdAt: string
+  updatedAt: string
+}

@@ -8,13 +8,14 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Case, Message, Patient, Provider } from '@/lib/types'
+import { Case, Message, Patient, Provider, ResponseTemplate } from '@/lib/types'
 import { useAuth } from '@/lib/auth-context'
-import { PaperPlaneRight, Lock, Sparkle, PencilSimple } from '@phosphor-icons/react'
+import { PaperPlaneRight, Lock, Sparkle, PencilSimple, Lightning } from '@phosphor-icons/react'
 import { format } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 interface CaseDetailDialogProps {
   case: Case
@@ -61,12 +62,15 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
   const [messages, setMessages] = useKV<Message[]>('messages', [])
   const [patients] = useKV<Patient[]>('patients', [])
   const [providers] = useKV<Provider[]>('providers', [])
+  const [responseTemplates] = useKV<ResponseTemplate[]>('response-templates', [])
   const [messageBody, setMessageBody] = useState('')
   const [visibility, setVisibility] = useState<'patient' | 'internal'>('patient')
   const [summary, setSummary] = useState<ClinicalSummary | null>(null)
   const [isSummarizing, setIsSummarizing] = useState(false)
   const [isEditingSummary, setIsEditingSummary] = useState(false)
   const [editedSummary, setEditedSummary] = useState<ClinicalSummary | null>(null)
+  const [isGeneratingResponse, setIsGeneratingResponse] = useState(false)
+  const [suggestedTemplates, setSuggestedTemplates] = useState<ResponseTemplate[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const caseMessages = (messages ?? [])
@@ -82,6 +86,117 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [caseMessages.length])
+
+  useEffect(() => {
+    if (currentUser?.role === 'provider' && open) {
+      findSuggestedTemplates()
+    }
+  }, [caseItem.id, open, currentUser?.role])
+
+  const findSuggestedTemplates = () => {
+    const templates = responseTemplates ?? []
+    const relevantTemplates = templates.filter(t => t.category === caseItem.caseType)
+    
+    const keywords = [
+      ...caseItem.subject.toLowerCase().split(' '),
+      ...caseItem.description.toLowerCase().split(' ')
+    ]
+    
+    const scored = relevantTemplates.map(template => {
+      const matchCount = template.promptKeywords.filter(keyword => 
+        keywords.some(k => k.includes(keyword.toLowerCase()))
+      ).length
+      return { template, score: matchCount }
+    })
+    
+    const topTemplates = scored
+      .filter(s => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map(s => s.template)
+    
+    setSuggestedTemplates(topTemplates)
+  }
+
+  const handleGenerateAIResponse = async () => {
+    setIsGeneratingResponse(true)
+    
+    try {
+      const conversationText = caseMessages
+        .map(msg => `[${msg.senderRole === 'provider' ? 'Provider' : 'Patient'}] ${msg.senderName}: ${msg.body}`)
+        .join('\n\n')
+
+      const promptText = `You are a medical provider assistant helping craft a professional response to a patient inquiry.
+
+Case Context:
+- Subject: ${caseItem.subject}
+- Description: ${caseItem.description}
+- Type: ${caseTypeLabels[caseItem.caseType]}
+- Urgency: ${urgencyLabels[caseItem.urgency]}
+
+Conversation History:
+${conversationText || 'No previous messages'}
+
+Generate a professional, empathetic response that:
+1. Acknowledges the patient's concern
+2. Provides helpful information or next steps
+3. Maintains a warm, professional tone
+4. Is concise (2-4 sentences)
+5. Includes a clear call-to-action if needed
+
+Return only the response text, no JSON formatting.`
+
+      const response = await window.spark.llm(promptText, 'gpt-4o', false)
+      setMessageBody(response.trim())
+      toast.success('AI response generated - review and edit before sending')
+    } catch (error) {
+      console.error('Response generation error:', error)
+      toast.error('Failed to generate response')
+    } finally {
+      setIsGeneratingResponse(false)
+    }
+  }
+
+  const handleUseTemplate = async (template: ResponseTemplate) => {
+    if (template.useAI) {
+      setIsGeneratingResponse(true)
+      
+      try {
+        const conversationText = caseMessages
+          .map(msg => `[${msg.senderRole === 'provider' ? 'Provider' : 'Patient'}] ${msg.senderName}: ${msg.body}`)
+          .join('\n\n')
+
+        const promptText = `You are customizing a response template for a patient. 
+
+Template: ${template.templateText}
+
+Case Context:
+- Subject: ${caseItem.subject}
+- Description: ${caseItem.description}
+- Patient: ${currentPatient?.firstName} ${currentPatient?.lastName}
+
+Conversation History:
+${conversationText || 'No previous messages'}
+
+Personalize this template to fit the specific context while maintaining its core message. Replace any placeholders with specific details. Keep the same professional tone.
+
+Return only the personalized response text.`
+
+        const response = await window.spark.llm(promptText, 'gpt-4o', false)
+        setMessageBody(response.trim())
+        toast.success('Template personalized with AI')
+      } catch (error) {
+        console.error('Template personalization error:', error)
+        setMessageBody(template.templateText)
+        toast.success('Template applied')
+      } finally {
+        setIsGeneratingResponse(false)
+      }
+    } else {
+      setMessageBody(template.templateText)
+      toast.success('Template applied')
+    }
+  }
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
@@ -397,17 +512,73 @@ Return your response as valid JSON.`
 
         <form onSubmit={handleSendMessage} className="p-6 pt-4">
           {currentUser?.role === 'provider' && (
-            <div className="mb-3">
-              <Select value={visibility} onValueChange={(value) => setVisibility(value as 'patient' | 'internal')}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="patient">Patient Message (visible to patient)</SelectItem>
-                  <SelectItem value="internal">Internal Note (provider only)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <>
+              <div className="mb-3 flex gap-2">
+                <Select value={visibility} onValueChange={(value) => setVisibility(value as 'patient' | 'internal')}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="patient">Patient Message (visible to patient)</SelectItem>
+                    <SelectItem value="internal">Internal Note (provider only)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  onClick={handleGenerateAIResponse}
+                  disabled={isGeneratingResponse}
+                >
+                  <Sparkle className="w-4 h-4 mr-2" weight={isGeneratingResponse ? 'fill' : 'regular'} />
+                  {isGeneratingResponse ? 'Generating...' : 'AI Response'}
+                </Button>
+                {suggestedTemplates.length > 0 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button type="button" variant="outline">
+                        <Lightning className="w-4 h-4 mr-2" weight="fill" />
+                        Templates
+                        {suggestedTemplates.length > 0 && (
+                          <Badge variant="secondary" className="ml-2 h-5 px-1.5">
+                            {suggestedTemplates.length}
+                          </Badge>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="end">
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-sm">Suggested Templates</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Based on case type and keywords
+                        </p>
+                        <Separator />
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {suggestedTemplates.map((template) => (
+                            <Card 
+                              key={template.id} 
+                              className="cursor-pointer hover:border-primary/50 transition-colors"
+                              onClick={() => handleUseTemplate(template)}
+                            >
+                              <CardContent className="p-3">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <h5 className="font-semibold text-sm">{template.name}</h5>
+                                  {template.useAI && (
+                                    <Sparkle className="w-4 h-4 text-primary shrink-0" weight="fill" />
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                  {template.templateText}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+            </>
           )}
           <div className="flex gap-3">
             <Textarea

@@ -54,6 +54,13 @@ This platform includes role-based multi-view dashboards, workflow automation eng
 - **Progression**: Video: Provider initiates → Patient receives link → Both join session → Video call completes → Notes saved to case. Reminders: Workflow trigger → System sends notification → Patient receives → Patient takes action
 - **Success criteria**: Video component renders correctly (feature-flagged); reminder functions execute at correct times; notifications include relevant context
 
+### AI-Powered Response Templates
+- **Functionality**: Providers create reusable response templates with keyword matching and optional AI personalization; templates are automatically suggested based on case context; AI can generate responses from scratch or customize existing templates
+- **Purpose**: Dramatically reduces provider response time for common patient inquiries while maintaining personalization and quality
+- **Trigger**: Provider opens case detail dialog; system suggests relevant templates based on case type and keywords; provider clicks "AI Response" or selects template
+- **Progression**: Provider views case → System suggests matching templates → Provider selects template or generates AI response → AI personalizes template with case context → Provider reviews and edits → Provider sends message
+- **Success criteria**: Templates accurately match case keywords; AI personalization maintains professional tone; providers can edit before sending; template library is easily manageable
+
 ## Edge Case Handling
 
 - **Missing Patient Data**: Form submissions and task creation gracefully handle incomplete patient records by creating placeholder entries and flagging for manual review.
@@ -63,6 +70,9 @@ This platform includes role-based multi-view dashboards, workflow automation eng
 - **Provider Unavailability**: Task reassignment mechanism allows delegating tasks when assigned provider is marked away/offline.
 - **Large Data Volumes**: Analytics dashboard limits chart data to last 90 days by default with option to expand; prevents rendering performance issues.
 - **Network Interruptions**: Form submissions cache locally and retry automatically; users notified of pending submissions.
+- **AI Response Failures**: If AI generation fails, providers can still manually type responses or use non-AI templates; user receives clear error message.
+- **Template Keyword Mismatches**: When no templates match case keywords, providers can still manually select from all templates or generate fresh AI responses.
+- **Duplicate Templates**: System allows multiple templates with similar keywords to coexist; relevance scoring ensures best matches surface first.
 
 ## Design Direction
 
@@ -108,16 +118,17 @@ Key animation moments: Form field focus (subtle glow), task completion (satisfyi
 
 - **Components**: 
   - Dialog for task details, case detail, form builder configuration
-  - Card for dashboard metrics, case summaries, appointment listings, task items
-  - Tabs for switching between dashboard views (overview/analytics/tasks)
-  - Select for filtering cases/tasks by status, urgency, type
-  - Button for primary actions (new case, complete task, submit form), variants for urgency levels
-  - Badge for status indicators, urgency levels, role tags
+  - Card for dashboard metrics, case summaries, appointment listings, task items, response templates
+  - Tabs for switching between dashboard views (overview/analytics/tasks/templates)
+  - Select for filtering cases/tasks by status, urgency, type; template categories
+  - Button for primary actions (new case, complete task, submit form, generate AI response), variants for urgency levels
+  - Badge for status indicators, urgency levels, role tags, AI-enabled templates
+  - Popover for template suggestions dropdown in case detail
   - Calendar (react-day-picker) for appointment scheduling and date inputs
-  - Form components (Input, Textarea, Select, Checkbox) with react-hook-form for validation
+  - Form components (Input, Textarea, Select, Checkbox, Switch) with react-hook-form for validation
   - Table for analytics data, form submission history
   - Progress bar for task completion metrics
-  - Alert for workflow notifications and AI insights
+  - Alert for workflow notifications, AI insights, and template feature explanations
   - Accordion for collapsible sections in form builder
   - Avatar for provider/patient identification
   - Separator for visual section breaks in complex forms
