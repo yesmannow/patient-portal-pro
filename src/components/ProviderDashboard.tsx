@@ -1,22 +1,19 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Case, Appointment, Client, CaseStatus } from '@/lib/types'
-import { useAuth } from '@/lib/auth-context'
+import { Case, Appointment, Patient, CaseStatus } from '@/lib/types'
 import { ChatCircle, CalendarBlank, ChartLine, Users, FunnelSimple } from '@phosphor-icons/react'
 import { CaseDetailDialog } from './CaseDetailDialog'
 import { ProviderCaseCard } from './ProviderCaseCard'
 import { format } from 'date-fns'
 
 export function ProviderDashboard() {
-  const { currentUser } = useAuth()
   const [cases, setCases] = useKV<Case[]>('cases', [])
   const [appointments] = useKV<Appointment[]>('appointments', [])
-  const [clients] = useKV<Client[]>('clients', [])
+  const [patients] = useKV<Patient[]>('patients', [])
   const [selectedCase, setSelectedCase] = useState<Case | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
@@ -25,7 +22,7 @@ export function ProviderDashboard() {
     ? allCases 
     : allCases.filter(c => c.status === statusFilter)
 
-  const activeCases = allCases.filter(c => c.status !== 'Resolved')
+  const activeCases = allCases.filter(c => c.status !== 'resolved')
   const upcomingAppointments = (appointments ?? [])
     .filter(a => a.status === 'scheduled')
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
@@ -46,7 +43,7 @@ export function ProviderDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Provider Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Manage cases, appointments, and client communications</p>
+        <p className="text-muted-foreground mt-1">Manage patient cases, appointments, and communications</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-4">
@@ -91,12 +88,12 @@ export function ProviderDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
             <Users className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(clients ?? []).length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active client base</p>
+            <div className="text-2xl font-bold">{(patients ?? []).length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Active patient base</p>
           </CardContent>
         </Card>
       </div>
@@ -124,10 +121,10 @@ export function ProviderDashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Cases</SelectItem>
-                  <SelectItem value="Open">Open</SelectItem>
-                  <SelectItem value="In Review">In Review</SelectItem>
-                  <SelectItem value="Waiting on Client">Waiting on Client</SelectItem>
-                  <SelectItem value="Resolved">Resolved</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="awaitingPatient">Awaiting Patient</SelectItem>
+                  <SelectItem value="awaitingProvider">Awaiting Provider</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -139,7 +136,7 @@ export function ProviderDashboard() {
                 <CardContent className="py-12 text-center">
                   <ChatCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duotone" />
                   <p className="text-muted-foreground">
-                    {statusFilter === 'all' ? 'No cases yet' : `No ${statusFilter.toLowerCase()} cases`}
+                    {statusFilter === 'all' ? 'No cases yet' : `No ${statusFilter} cases`}
                   </p>
                 </CardContent>
               </Card>

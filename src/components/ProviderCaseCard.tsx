@@ -1,9 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Case, CaseStatus } from '@/lib/types'
-import { CheckCircle } from '@phosphor-icons/react'
+import { CheckCircle, Warning, Clock } from '@phosphor-icons/react'
 import { format } from 'date-fns'
 import { motion } from 'framer-motion'
 
@@ -14,16 +13,30 @@ interface ProviderCaseCardProps {
 }
 
 const statusColors = {
-  'Open': 'bg-[var(--status-open)] text-white',
-  'In Review': 'bg-[var(--status-review)] text-white',
-  'Waiting on Client': 'bg-[var(--status-waiting)] text-white',
-  'Resolved': 'bg-[var(--status-resolved)] text-white',
+  'open': 'bg-blue-500 text-white',
+  'awaitingPatient': 'bg-amber-500 text-white',
+  'awaitingProvider': 'bg-purple-500 text-white',
+  'resolved': 'bg-green-600 text-white',
 }
 
-const priorityColors = {
-  high: 'border-l-[var(--priority-high)]',
-  medium: 'border-l-[var(--priority-medium)]',
-  low: 'border-l-[var(--priority-low)]',
+const urgencyColors = {
+  urgent: 'border-l-red-600',
+  timeSensitive: 'border-l-amber-500',
+  routine: 'border-l-blue-500',
+}
+
+const urgencyLabels = {
+  urgent: 'Urgent',
+  timeSensitive: 'Time-Sensitive',
+  routine: 'Routine',
+}
+
+const caseTypeLabels = {
+  question: 'Question',
+  followUp: 'Follow-Up',
+  billing: 'Billing',
+  clinicalConcern: 'Clinical Concern',
+  admin: 'Administrative',
 }
 
 export function ProviderCaseCard({ case: caseItem, onClick, onStatusChange }: ProviderCaseCardProps) {
@@ -33,7 +46,7 @@ export function ProviderCaseCard({ case: caseItem, onClick, onStatusChange }: Pr
       transition={{ duration: 0.15 }}
     >
       <Card 
-        className={`cursor-pointer border-l-4 ${priorityColors[caseItem.priority]} hover:border-primary/30 hover:shadow-md transition-all`}
+        className={`cursor-pointer border-l-4 ${urgencyColors[caseItem.urgency]} hover:border-primary/30 hover:shadow-md transition-all`}
         onClick={onClick}
       >
         <CardContent className="p-5">
@@ -42,7 +55,12 @@ export function ProviderCaseCard({ case: caseItem, onClick, onStatusChange }: Pr
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="font-semibold text-lg">{caseItem.subject}</h3>
                 <Badge variant="outline" className="text-xs">
-                  {caseItem.priority.toUpperCase()}
+                  {caseTypeLabels[caseItem.caseType]}
+                </Badge>
+                <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                  {caseItem.urgency === 'urgent' && <Warning className="w-3 h-3" weight="fill" />}
+                  {caseItem.urgency === 'timeSensitive' && <Clock className="w-3 h-3" weight="fill" />}
+                  {urgencyLabels[caseItem.urgency]}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
@@ -65,10 +83,10 @@ export function ProviderCaseCard({ case: caseItem, onClick, onStatusChange }: Pr
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Open">Open</SelectItem>
-                  <SelectItem value="In Review">In Review</SelectItem>
-                  <SelectItem value="Waiting on Client">Waiting on Client</SelectItem>
-                  <SelectItem value="Resolved">
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="awaitingPatient">Awaiting Patient</SelectItem>
+                  <SelectItem value="awaitingProvider">Awaiting Provider</SelectItem>
+                  <SelectItem value="resolved">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4" weight="fill" />
                       Resolved

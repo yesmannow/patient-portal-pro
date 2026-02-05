@@ -7,12 +7,13 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { Case, Message } from '@/lib/types'
+import { Case, Message, Patient, Provider } from '@/lib/types'
 import { useAuth } from '@/lib/auth-context'
-import { PaperPlaneRight } from '@phosphor-icons/react'
+import { PaperPlaneRight, Lock } from '@phosphor-icons/react'
 import { format } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface CaseDetailDialogProps {
   case: Case
@@ -21,22 +22,49 @@ interface CaseDetailDialogProps {
 }
 
 const statusColors = {
-  'Open': 'bg-[var(--status-open)] text-white',
-  'In Review': 'bg-[var(--status-review)] text-white',
-  'Waiting on Client': 'bg-[var(--status-waiting)] text-white',
-  'Resolved': 'bg-[var(--status-resolved)] text-white',
+  'open': 'bg-blue-500 text-white',
+  'awaitingPatient': 'bg-amber-500 text-white',
+  'awaitingProvider': 'bg-purple-500 text-white',
+  'resolved': 'bg-green-600 text-white',
+}
+
+const statusLabels = {
+  'open': 'Open',
+  'awaitingPatient': 'Awaiting Patient',
+  'awaitingProvider': 'Awaiting Provider',
+  'resolved': 'Resolved',
+}
+
+const caseTypeLabels = {
+  question: 'Question',
+  followUp: 'Follow-Up',
+  billing: 'Billing',
+  clinicalConcern: 'Clinical Concern',
+  admin: 'Administrative',
+}
+
+const urgencyLabels = {
+  urgent: 'Urgent',
+  timeSensitive: 'Time-Sensitive',
+  routine: 'Routine',
 }
 
 export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDetailDialogProps) {
   const { currentUser } = useAuth()
   const [messages, setMessages] = useKV<Message[]>('messages', [])
+  const [patients] = useKV<Patient[]>('patients', [])
+  const [providers] = useKV<Provider[]>('providers', [])
   const [messageBody, setMessageBody] = useState('')
+  const [visibility, setVisibility] = useState<'patient' | 'internal'>('patient')
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const caseMessages = (messages ?? [])
     .filter(m => m.caseId === caseItem.id)
-    .filter(m => currentUser?.role === 'provider' || m.visibility === 'client')
+    .filter(m => currentUser?.role === 'provider' || m.visibility === 'patient')
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+
+  const currentPatient = (patients ?? []).find(p => p.id === caseItem.patientId)
+  const currentProvider = (providers ?? []).find(p => p.email === currentUser?.email)
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -49,21 +77,25 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
     
     if (!messageBody.trim() || !currentUser) return
 
+    const senderName = currentUser.role === 'patient' 
+      ? `${currentPatient?.firstName ?? ''} ${currentPatient?.lastName ?? ''}`.trim() || currentUser.email
+      : currentProvider?.name || currentUser.email
+
     const newMessage: Message = {
       id: `msg-${Date.now()}`,
       caseId: caseItem.id,
       senderId: currentUser.id,
-      senderName: currentUser.name,
+      senderName,
       senderRole: currentUser.role,
       body: messageBody,
-      visibility: 'client',
+      visibility: currentUser.role === 'provider' ? visibility : 'patient',
       timestamp: new Date().toISOString(),
     }
 
     setMessages((current) => [...(current ?? []), newMessage])
     setMessageBody('')
     
-    toast.success('Message sent')
+    toast.success(visibility === 'internal' ? 'Internal note added' : 'Message sent')
   }
 
   const getInitials = (name: string) => {
@@ -72,7 +104,7 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
       .map(n => n[0])
       .join('')
       .toUpperCase()
-      .slice(0, 2)
+      .slice(0, 2) || name.slice(0, 2).toUpperCase()
   }
 
   return (
@@ -81,13 +113,21 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
         <DialogHeader className="p-6 pb-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className="text-xs">
+                  {caseTypeLabels[caseItem.caseType]}
+                </Badge>
+                <Badge variant="secondary" className="text-xs">
+                  {urgencyLabels[caseItem.urgency]}
+                </Badge>
+              </div>
               <DialogTitle className="text-xl">{caseItem.subject}</DialogTitle>
               <DialogDescription className="mt-2">
                 {caseItem.description}
               </DialogDescription>
             </div>
             <Badge className={statusColors[caseItem.status]}>
-              {caseItem.status}
+              {statusLabels[caseItem.status]}
             </Badge>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground pt-3">
@@ -109,6 +149,7 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
               ) : (
                 caseMessages.map((message) => {
                   const isCurrentUser = message.senderId === currentUser?.id
+                  const isInternal = message.visibility === 'internal'
                   return (
                     <motion.div
                       key={message.id}
@@ -125,13 +166,21 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
                       <div className={`flex-1 max-w-[70%] ${isCurrentUser ? 'items-end' : ''}`}>
                         <div className="flex items-baseline gap-2 mb-1">
                           <span className="text-sm font-medium">{message.senderName}</span>
+                          {isInternal && (
+                            <Badge variant="secondary" className="text-xs h-5 gap-1">
+                              <Lock className="w-3 h-3" />
+                              Internal Note
+                            </Badge>
+                          )}
                           <span className="text-xs text-muted-foreground">
                             {format(new Date(message.timestamp), 'MMM d, h:mm a')}
                           </span>
                         </div>
                         <div 
                           className={`rounded-lg p-3 ${
-                            isCurrentUser 
+                            isInternal
+                              ? 'bg-yellow-50 border border-yellow-300'
+                              : isCurrentUser 
                               ? 'bg-primary text-primary-foreground' 
                               : message.senderRole === 'provider'
                               ? 'bg-primary/5 border border-primary/20'
@@ -152,9 +201,22 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
         <Separator />
 
         <form onSubmit={handleSendMessage} className="p-6 pt-4">
+          {currentUser?.role === 'provider' && (
+            <div className="mb-3">
+              <Select value={visibility} onValueChange={(value) => setVisibility(value as 'patient' | 'internal')}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="patient">Patient Message (visible to patient)</SelectItem>
+                  <SelectItem value="internal">Internal Note (provider only)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="flex gap-3">
             <Textarea
-              placeholder="Type your message..."
+              placeholder={visibility === 'internal' ? 'Type internal note...' : 'Type your message...'}
               value={messageBody}
               onChange={(e) => setMessageBody(e.target.value)}
               rows={3}

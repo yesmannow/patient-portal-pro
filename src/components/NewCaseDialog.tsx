@@ -6,34 +6,33 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Case, CasePriority } from '@/lib/types'
-import { useAuth } from '@/lib/auth-context'
+import { Case, CaseType, Urgency } from '@/lib/types'
 import { toast } from 'sonner'
 
 interface NewCaseDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  patientId: string
 }
 
-export function NewCaseDialog({ open, onOpenChange }: NewCaseDialogProps) {
-  const { currentUser } = useAuth()
+export function NewCaseDialog({ open, onOpenChange, patientId }: NewCaseDialogProps) {
   const [cases, setCases] = useKV<Case[]>('cases', [])
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState<CasePriority>('medium')
+  const [caseType, setCaseType] = useState<CaseType>('question')
+  const [urgency, setUrgency] = useState<Urgency>('routine')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!currentUser) return
 
     const newCase: Case = {
       id: `case-${Date.now()}`,
-      clientId: currentUser.id,
+      patientId,
+      caseType,
       subject,
       description,
-      status: 'Open',
-      priority,
+      urgency,
+      status: 'open',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
@@ -41,12 +40,13 @@ export function NewCaseDialog({ open, onOpenChange }: NewCaseDialogProps) {
     setCases((current) => [...(current ?? []), newCase])
     
     toast.success('Case created successfully', {
-      description: 'A provider will review your case shortly.',
+      description: 'Your healthcare provider will review your case shortly.',
     })
 
     setSubject('')
     setDescription('')
-    setPriority('medium')
+    setCaseType('question')
+    setUrgency('routine')
     onOpenChange(false)
   }
 
@@ -56,10 +56,38 @@ export function NewCaseDialog({ open, onOpenChange }: NewCaseDialogProps) {
         <DialogHeader>
           <DialogTitle>Create New Case</DialogTitle>
           <DialogDescription>
-            Submit a question or concern. A provider will respond shortly.
+            Submit a health-related question or concern. Your care team will respond promptly.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="case-type">Case Type</Label>
+            <Select value={caseType} onValueChange={(value) => setCaseType(value as CaseType)}>
+              <SelectTrigger id="case-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="question">Question</SelectItem>
+                <SelectItem value="followUp">Follow-Up</SelectItem>
+                <SelectItem value="billing">Billing</SelectItem>
+                <SelectItem value="clinicalConcern">Clinical Concern</SelectItem>
+                <SelectItem value="admin">Administrative</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="urgency">Urgency</Label>
+            <Select value={urgency} onValueChange={(value) => setUrgency(value as Urgency)}>
+              <SelectTrigger id="urgency">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="routine">Routine - General inquiry</SelectItem>
+                <SelectItem value="timeSensitive">Time-Sensitive - Need response within 24 hours</SelectItem>
+                <SelectItem value="urgent">Urgent - Requires immediate attention</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="subject">Subject</Label>
             <Input
@@ -80,19 +108,6 @@ export function NewCaseDialog({ open, onOpenChange }: NewCaseDialogProps) {
               rows={6}
               required
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="priority">Priority</Label>
-            <Select value={priority} onValueChange={(value) => setPriority(value as CasePriority)}>
-              <SelectTrigger id="priority">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low - General inquiry</SelectItem>
-                <SelectItem value="medium">Medium - Need response soon</SelectItem>
-                <SelectItem value="high">High - Urgent matter</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

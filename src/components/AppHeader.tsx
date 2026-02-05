@@ -1,20 +1,16 @@
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
-import { SignOut, User } from '@phosphor-icons/react'
+import { SignOut, FirstAidKit } from '@phosphor-icons/react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 
 export function AppHeader() {
   const { currentUser, logout } = useAuth()
 
   if (!currentUser) return null
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
+  const getInitials = (email: string) => {
+    return email.slice(0, 2).toUpperCase()
   }
 
   return (
@@ -22,11 +18,16 @@ export function AppHeader() {
       <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-            <User className="w-5 h-5 text-primary" weight="duotone" />
+            <FirstAidKit className="w-5 h-5 text-primary" weight="duotone" />
           </div>
           <div>
-            <h1 className="font-bold text-lg">Client Portal</h1>
-            <p className="text-xs text-muted-foreground capitalize">{currentUser.role} Dashboard</p>
+            <h1 className="font-bold text-lg">Medical Practice Portal</h1>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground capitalize">{currentUser.role}</p>
+              <Badge variant="secondary" className="text-xs py-0 h-5">
+                {currentUser.role === 'patient' ? 'Patient' : 'Provider'}
+              </Badge>
+            </div>
           </div>
         </div>
         
@@ -34,12 +35,12 @@ export function AppHeader() {
           <div className="flex items-center gap-3">
             <Avatar className="w-9 h-9">
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                {getInitials(currentUser.name)}
+                {getInitials(currentUser.email)}
               </AvatarFallback>
             </Avatar>
             <div className="hidden sm:block">
-              <p className="text-sm font-medium">{currentUser.name}</p>
-              <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+              <p className="text-sm font-medium">{currentUser.email}</p>
+              <p className="text-xs text-muted-foreground capitalize">{currentUser.role}</p>
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={logout}>

@@ -1,166 +1,168 @@
 # Planning Guide
 
-A comprehensive business communication and customer relationship portal that enables seamless interaction between service providers and their clients through integrated messaging, appointment scheduling, and targeted engagement campaigns.
+A HIPAA-compliant medical practice patient-provider communication platform that enables secure messaging, care coordination, and clinical workflow management between healthcare providers and their patients.
 
 **Experience Qualities**:
-1. **Professional** - Interface conveys trustworthiness and competence through clean design, clear hierarchy, and attention to detail
-2. **Efficient** - Users can complete common tasks quickly with minimal clicks; providers can triage and respond to messages at speed
-3. **Organized** - Complex information is structured logically with clear navigation, smart filtering, and visual grouping of related content
+1. **Trustworthy** - Interface conveys security, professionalism, and clinical competence through clear data hierarchy and medical-grade attention to detail
+2. **Efficient** - Healthcare providers can triage urgent cases, respond to routine inquiries, and manage patient communications with minimal clicks
+3. **Clear** - Medical terminology and patient statuses are consistently presented with structured fields, eliminating ambiguity in care coordination
 
 **Complexity Level**: Complex Application (advanced functionality, likely with multiple views)
-This application requires role-based access control, multiple interconnected data models (clients, cases, messages, appointments, campaigns), real-time messaging workflows, analytics dashboards, and sophisticated state management across provider and client portals.
+This application requires role-based access control (patient vs. provider with different specialties), structured medical data models with immutable enums, clinical workflow management, secure messaging with internal notes, appointment coordination, and real-time status updates across multiple care team members.
 
 ## Essential Features
 
-### Client Authentication & Profile Management
-- **Functionality**: Secure login system with role-based access (client vs. provider); client profile with contact info, preferences, and tags
-- **Purpose**: Establishes identity, personalizes experience, enables targeted communication
-- **Trigger**: User navigates to portal URL or clicks login link
-- **Progression**: Landing page → Login form → Dashboard (client or provider based on role)
-- **Success criteria**: Users can log in, view their profile, update preferences; system correctly routes to appropriate dashboard
+### Patient Authentication & Profile Management
+- **Functionality**: Secure login for patients; profile displays firstName, lastName, dateOfBirth, contact information, preferredContactMethod, conditionType, patientStatus, and onboardingSource
+- **Purpose**: Establishes patient identity, tracks care journey, enables targeted communication based on condition type and status
+- **Trigger**: Patient navigates to portal URL or clicks login link
+- **Progression**: Landing page → Login form → Patient Dashboard with cases and appointments
+- **Success criteria**: Patients can log in, view their structured profile with all enum fields displayed clearly; system routes based on role
 
-### Case Management System
-- **Functionality**: Clients submit questions/concerns as cases; providers view, triage, assign priority, change status, respond
-- **Purpose**: Organizes client communications into trackable threads with lifecycle management
-- **Trigger**: Client clicks "New Case" or provider opens pending cases list
-- **Progression**: New case button → Case form (subject, description, attachments) → Submit → Appears in provider queue → Provider reviews → Status updates → Resolution
-- **Success criteria**: Cases persist with all metadata; status changes reflect in real-time; providers can filter by status/priority
+### Provider Authentication & Availability Management
+- **Functionality**: Secure login for providers; profile displays name, role (physician|therapist|nurse|admin), specialty, and availabilityStatus
+- **Purpose**: Establishes provider identity and credentials, enables intelligent case routing based on specialty and availability
+- **Trigger**: Provider navigates to portal URL
+- **Progression**: Landing page → Login form → Provider Dashboard with case queue and patient overview
+- **Success criteria**: Providers can log in, system displays role and specialty badges, availability status updates persist
 
-### Threaded Messaging
-- **Functionality**: Each case contains a message thread; clients and providers exchange messages; providers can add internal notes invisible to clients
-- **Trigger**: User opens a case
-- **Progression**: Case detail view → Message thread display → Compose message → Send → Message appears in thread with timestamp
-- **Success criteria**: Messages display chronologically; internal notes hidden from clients; attachments supported
+### Clinical Case Management System
+- **Functionality**: Patients create cases with caseType (question|followUp|billing|clinicalConcern|admin), urgency (routine|timeSensitive|urgent), subject, and description; providers triage by urgency and type, assign cases, update status through workflow (open → awaitingPatient/awaitingProvider → resolved)
+- **Purpose**: Structures patient communications into trackable clinical workflows with clear urgency indicators for care team prioritization
+- **Trigger**: Patient clicks "New Case" or provider opens case queue filtered by urgency or caseType
+- **Progression**: New case form → Select caseType and urgency (required enums) → Enter subject/description → Submit → Appears in provider queue sorted by urgency → Provider reviews → Status progresses through workflow → Resolution
+- **Success criteria**: Cases display with caseType badges, urgency color-coding (urgent=red, timeSensitive=amber, routine=blue); providers can filter by caseType and urgency; status transitions follow clinical workflow; no free-text status values
 
-### Appointment Scheduling
-- **Functionality**: View upcoming appointments; book new appointments with providers; receive confirmations
-- **Purpose**: Coordinates in-person or virtual meetings
-- **Trigger**: Client clicks "Schedule Appointment" or views calendar
-- **Progression**: Calendar view → Select date/time → Choose provider → Add reason → Confirm → Appointment created → Appears on both dashboards
-- **Success criteria**: Appointments persist; both parties can view; conflicts prevented
+### Secure Threaded Messaging
+- **Functionality**: Each case contains a message thread; patients and providers exchange messages; providers add internal notes (visibility: internal) invisible to patients
+- **Purpose**: HIPAA-compliant communication with clinical documentation separated from patient-facing messages
+- **Trigger**: User opens a case from dashboard
+- **Progression**: Case detail view → Message thread display (patient messages vs. internal notes visually distinct) → Compose message → Select visibility (provider only) → Send → Message appears with timestamp and sender badge
+- **Success criteria**: Messages display chronologically; internal notes have distinct styling and "Internal Note" badge; patient users never see internal visibility messages; attachments supported
 
-### Marketing Campaign Manager
-- **Functionality**: Providers create targeted campaigns based on client tags; schedule sends; track engagement metrics
-- **Purpose**: Proactive outreach for announcements, promotions, educational content
-- **Trigger**: Provider navigates to campaigns section → Create campaign
-- **Progression**: Campaign form → Set title, content, target tags, schedule → Save → System sends at scheduled time → Track opens/clicks
-- **Success criteria**: Campaigns send to correct audience; metrics update; clients receive communications
+### Appointment Scheduling & Coordination
+- **Functionality**: View upcoming appointments by patient; schedule appointments with specific providers based on their role and specialty
+- **Purpose**: Coordinates clinical visits and follow-up care
+- **Trigger**: Patient clicks "Schedule Appointment" or views appointment calendar
+- **Progression**: Calendar view → Select date/time → Choose provider (filtered by specialty) → Add clinical reason → Confirm → Appointment persists → Appears on both patient and provider dashboards
+- **Success criteria**: Appointments display with provider specialty and role; both parties can view; status (scheduled|completed|cancelled) updates correctly
 
-### Analytics Dashboard
-- **Functionality**: Display key metrics: average response time, case resolution rate, campaign engagement, client satisfaction
-- **Purpose**: Data-driven insights for service improvement
+### Clinical Analytics Dashboard (Provider)
+- **Functionality**: Display key practice metrics: case volume by caseType, urgency distribution, average response time by urgency level, resolution rate, patient status breakdown
+- **Purpose**: Data-driven insights for practice management and clinical quality improvement
 - **Trigger**: Provider navigates to analytics tab
-- **Progression**: Analytics page loads → Charts render → Filter by date range → Export data
-- **Success criteria**: Metrics calculate correctly; visualizations clear; data updates as new events occur
+- **Progression**: Analytics page loads → Charts render showing caseType distribution, urgency trends, response time by urgency → Filter by date range → Export data
+- **Success criteria**: All metrics calculate from structured enum fields; no reliance on free-text; visualizations show clinical workflow patterns clearly
 
 ## Edge Case Handling
 
-- **Unauthenticated access attempts**: Redirect to login page; preserve intended destination for post-login redirect
-- **Empty states**: Show helpful guidance when no cases, appointments, or campaigns exist (e.g., "No pending cases – you're all caught up!")
-- **Long message threads**: Auto-collapse older messages; provide AI summary at top of thread
-- **Missing client data**: Gracefully handle incomplete profiles; prompt for required fields
-- **Concurrent edits**: Last-write-wins for now; future: show warning if case modified by another user
-- **Network failures**: Show error toast; retry failed operations; preserve unsent message drafts in local state
-- **Large attachments**: Validate file size; show upload progress; display error for oversized files
-- **Invalid appointment times**: Prevent booking in past; check provider availability; show conflicts
+- **Unauthenticated access attempts**: Redirect to login; preserve intended destination for post-login redirect
+- **Empty patient queue**: Show helpful onboarding message with clinical context (e.g., "No active cases – your care team will respond within 24 hours")
+- **Long message threads**: Auto-collapse older messages beyond 10; display expand control
+- **Missing patient data**: Required fields (firstName, lastName, dateOfBirth, preferredContactMethod, conditionType) must be captured; gracefully prompt for completion
+- **Concurrent case updates**: Last-write-wins for status changes; display warning if case modified by another provider
+- **Network failures**: Show error toast; retry failed operations; preserve unsent message drafts in component state
+- **Invalid appointment times**: Prevent booking in past; check provider availability; show scheduling conflicts
+- **Urgent case notification**: Visual indicator (red badge) on urgent cases; providers see urgent cases first in queue
 
 ## Design Direction
 
-The design should evoke **trust, clarity, and calm efficiency**. Users should feel confident that their communications are secure and will be handled promptly. The interface should reduce cognitive load through excellent information hierarchy, generous whitespace, and purposeful use of color to indicate status and priority. Subtle animations reinforce actions without distraction.
+The design should evoke **clinical trust, clarity, and calm efficiency**. Patients should feel confident their health concerns are being handled securely and professionally. Providers should experience a streamlined clinical workflow with clear urgency indicators and structured data presentation. The interface reduces cognitive load through excellent medical information hierarchy, generous whitespace, and purposeful use of color to indicate clinical urgency and case status.
 
 ## Color Selection
 
-A sophisticated palette anchored in deep teals and warm neutrals, projecting professionalism and approachability.
+A professional medical palette anchored in calming blues and clinical whites, with clear urgency indicators.
 
-- **Primary Color**: Deep Teal `oklch(0.45 0.08 210)` – Conveys trust, competence, and calm; used for primary actions, navigation highlights, and brand elements
+- **Primary Color**: Medical Blue `oklch(0.50 0.12 230)` – Conveys trust, clinical professionalism, and calm; used for primary actions and provider elements
 - **Secondary Colors**: 
-  - Warm Slate `oklch(0.35 0.015 260)` for secondary UI elements and borders
-  - Soft Cream `oklch(0.97 0.01 85)` for card backgrounds and subtle contrast
-- **Accent Color**: Vibrant Coral `oklch(0.68 0.15 25)` – Warm, inviting highlight for CTAs, notifications, and important status indicators
+  - Clinical Slate `oklch(0.40 0.01 240)` for secondary UI elements and provider notes
+  - Soft White `oklch(0.98 0.005 240)` for card backgrounds and clean clinical aesthetic
+- **Accent Color**: Urgent Red `oklch(0.60 0.20 25)` – Clear, medical-appropriate indicator for urgent cases and critical status
 - **Foreground/Background Pairings**:
-  - Primary Teal `oklch(0.45 0.08 210)`: White text `oklch(1 0 0)` - Ratio 8.2:1 ✓
-  - Accent Coral `oklch(0.68 0.15 25)`: White text `oklch(1 0 0)` - Ratio 5.1:1 ✓
-  - Background Cream `oklch(0.97 0.01 85)`: Dark Slate text `oklch(0.25 0.015 260)` - Ratio 12.8:1 ✓
-  - Muted backgrounds `oklch(0.94 0.005 260)`: Mid-tone text `oklch(0.50 0.02 260)` - Ratio 6.4:1 ✓
+  - Primary Blue `oklch(0.50 0.12 230)`: White text `oklch(1 0 0)` - Ratio 7.1:1 ✓
+  - Urgent Red `oklch(0.60 0.20 25)`: White text `oklch(1 0 0)` - Ratio 5.8:1 ✓
+  - Background White `oklch(0.98 0.005 240)`: Dark text `oklch(0.25 0.015 240)` - Ratio 13.2:1 ✓
+  - Muted backgrounds `oklch(0.94 0.005 240)`: Mid-tone text `oklch(0.50 0.02 240)` - Ratio 6.2:1 ✓
 
 ## Font Selection
 
-Typography should balance modern professionalism with excellent readability for extended use.
+Typography should convey medical professionalism with excellent readability for clinical documentation.
 
-- **Primary**: **Instrument Sans** for UI elements, headings, and labels – geometric clarity with humanist warmth
-- **Secondary**: **Inter** for body text, messages, and data tables – optimized for screen legibility
+- **Primary**: **Instrument Sans** for UI elements, headings, and clinical labels – modern, professional, highly legible
+- **Secondary**: **Inter** for body text, message threads, and patient documentation – optimized for extended reading of medical content
 
 **Typographic Hierarchy**:
-- H1 (Page Titles): Instrument Sans Bold / 32px / -0.02em letter spacing / line-height 1.2
+- H1 (Page Titles): Instrument Sans Semibold / 32px / -0.02em letter spacing / line-height 1.2
 - H2 (Section Headers): Instrument Sans Semibold / 24px / -0.01em / line-height 1.3
 - H3 (Card Titles): Instrument Sans Medium / 18px / normal / line-height 1.4
-- Body (Messages, Content): Inter Regular / 15px / normal / line-height 1.6
-- Labels (Form Fields): Instrument Sans Medium / 13px / 0.01em / line-height 1.4
+- Body (Messages, Notes): Inter Regular / 15px / normal / line-height 1.6
+- Labels (Form Fields, Enums): Instrument Sans Medium / 13px / 0.01em / line-height 1.4
 - Small (Metadata, Timestamps): Inter Regular / 13px / normal / line-height 1.5
 
 ## Animations
 
-Animations should **orient users during transitions and provide tactile feedback** for interactions, never delay or distract. Use subtle spring physics (framer-motion defaults) for natural feel.
+Animations should **orient users during clinical workflow transitions and provide clear feedback** for status changes, never delaying critical medical information display.
 
-- **Page transitions**: 300ms slide-fade when switching dashboard views
-- **Case status changes**: 200ms color fade and subtle scale pulse (0.98 → 1.0) on status badge
-- **Message send**: Optimistic rendering with 150ms fade-in; subtle slide-up from compose area
-- **Card hover states**: 150ms elevation increase (shadow depth change) and 100ms border color shift
-- **Loading states**: Skeleton shimmer for content placeholders; indeterminate progress for actions
-- **Toast notifications**: Slide-in from top-right with spring, auto-dismiss after 4s with fade-out
+- **Case status transitions**: 250ms color fade and subtle pulse on status badge when changed
+- **Urgency indicator**: Urgent cases have subtle 2s pulse animation on red border to draw provider attention
+- **Message send**: 150ms fade-in; immediate optimistic rendering for clinical responsiveness
+- **Provider availability change**: 200ms color transition on availability badge
+- **Loading states**: Skeleton shimmer for case lists; no blocking spinners for critical data
+- **Toast notifications**: Slide-in from top-right for case assignments and urgent alerts
 
 ## Component Selection
 
 **Components**: 
-- **Dialog** for new case creation, appointment booking, campaign setup – modal focus on complex forms
-- **Card** for case listings, appointment items, client profiles – contained units of information with clear visual boundaries
-- **Tabs** for switching between "Active Cases," "Resolved," "All" – horizontal navigation within context
-- **Badge** for case status, priority indicators – compact, color-coded labels (customize with status-specific colors)
-- **Button** variants: primary (teal) for main actions, secondary (outline) for cancel/back, ghost for icon-only
-- **Select** for provider assignment, status changes, tag selection
+- **Dialog** for new case creation, appointment booking – modal focus on structured form entry
+- **Card** for case listings, patient profiles – clean, bordered containers for medical information
+- **Badge** for caseType, urgency, patientStatus, providerRole, availabilityStatus – color-coded enum indicators
+- **Select** for all enum fields (caseType, urgency, status, providerRole, conditionType, etc.) – enforces structured data entry
+- **Button** variants: primary (medical blue) for main actions, secondary (outline) for cancel, destructive (red) for urgent actions
 - **Textarea** for message composition, case descriptions
-- **Calendar** (react-day-picker) for appointment scheduling
-- **ScrollArea** for long message threads
-- **Avatar** for client and provider identity in message threads
-- **Separator** to divide sections within complex views
-- **Toast** (sonner) for confirmations, errors, success messages
+- **Separator** to divide patient info sections and message threads
+- **ScrollArea** for long message threads in clinical cases
+- **Avatar** with role badges for patient and provider identity in messages
+- **Toast** (sonner) for case assignments, urgent case alerts, status confirmations
 
 **Customizations**:
-- **Case Card Component**: Custom card layout with left-border color coding by priority (high=coral, medium=amber, low=muted)
-- **Message Bubble**: Custom component with role-based styling (client messages: cream background, provider: light teal)
-- **Stats Card**: Custom card with large number display, label, and trend indicator for analytics
-- **Empty State Illustration**: Custom SVG or icon-based empty states for zero-data views
+- **Case Card Component**: Custom card with left-border color by urgency (urgent=red 4px, timeSensitive=amber 4px, routine=blue 2px); caseType badge in header
+- **Message Bubble**: Role-based styling (patient: soft white background, provider: light blue background, internal note: yellow tint with lock icon)
+- **Urgency Indicator**: Custom component with pulsing animation for urgent cases; static for routine/timeSensitive
+- **Provider Badge**: Custom badge showing role icon + specialty text
+- **Patient Status Indicator**: Color-coded badge (new=green, active=blue, dormant=gray, discharged=slate)
 
 **States**:
-- Buttons: Default (solid primary) → Hover (darker teal, slight lift) → Active (pressed, scale 0.98) → Disabled (50% opacity, no pointer)
-- Inputs: Default (border-input) → Focus (ring-2 ring-primary, border-primary) → Error (border-destructive, ring-destructive) → Filled (subtle background shift)
-- Cards: Default (border-border) → Hover (border-primary/30, shadow-md) → Selected (border-primary, subtle background tint)
+- Buttons: Default (solid primary) → Hover (darker blue) → Active (pressed) → Disabled (50% opacity)
+- Case Cards: Default → Hover (border-primary, shadow) → Selected (blue background tint)
+- Status Badges: Animate on change with 250ms color transition
+- Urgency Urgent: Continuous subtle 2s pulse to maintain provider attention
 
 **Icon Selection**:
-- **Chats** (ChatCircle) for cases/messages
-- **Calendar** (CalendarBlank) for appointments
-- **Megaphone** (Megaphone) for campaigns
-- **ChartLine** (ChartLine) for analytics
-- **User** (User) for client profiles
-- **CheckCircle** (CheckCircle) for resolved status
-- **Clock** (Clock) for pending status
-- **ArrowRight** (ArrowRight) for progression indicators
-- **Plus** (Plus) for create actions
-- **FunnelSimple** (FunnelSimple) for filters
+- **ChatCircle** for cases/messages
+- **CalendarBlank** for appointments
+- **FirstAidKit** for clinical concerns
+- **Question** for question caseType
+- **ClockCounterClockwise** for follow-up caseType
+- **CurrencyDollar** for billing caseType
+- **Clipboard** for admin caseType
+- **Warning** for urgent urgency
+- **Clock** for timeSensitive urgency
+- **CheckCircle** for resolved status
+- **UserCircle** for patient
+- **Stethoscope** for providers
 
 **Spacing**:
 - Container padding: `p-6` (24px) on desktop, `p-4` (16px) on mobile
-- Card internal spacing: `p-5` (20px)
-- Gap between cards/list items: `gap-4` (16px)
-- Form field spacing: `space-y-4` (16px vertical)
-- Section margins: `mb-8` (32px) between major sections
-- Inline element gaps: `gap-2` (8px) for icon+label, tags
+- Card internal spacing: `p-5` (20px) for clinical information cards
+- Gap between case cards: `gap-4` (16px)
+- Form field spacing: `space-y-4` (16px) for structured enum entry
+- Section margins: `mb-8` (32px) between dashboard sections
+- Message bubble spacing: `gap-3` (12px) for readability
 
 **Mobile**:
-- Navigation: Top app bar with hamburger menu; side drawer for main navigation (Sidebar component in sheet mode)
-- Cards: Full-width on mobile (<768px); reduce internal padding to `p-4`
-- Tabs: Scrollable horizontal tabs with scroll-shadow indicators
-- Forms: Stack all inputs vertically; full-width buttons
-- Message threads: Reduce avatar size; tighter message spacing
-- Analytics: Stack charts vertically; simplified metrics (1 per row)
-- Touch targets: Minimum 44px height for all interactive elements
+- Navigation: Top medical header with patient/provider name; hamburger for secondary navigation
+- Case Cards: Full-width on mobile; reduce padding to `p-4`; urgency border remains prominent
+- Enum Badges: Maintain full size for clinical clarity; wrap if needed
+- Forms: Stack all enum selects vertically; full-width buttons
+- Message threads: Maintain role distinction; reduce avatar size to 32px
+- Touch targets: Minimum 44px for all clinical actions and case selections

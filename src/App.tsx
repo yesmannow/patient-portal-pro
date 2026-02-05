@@ -1,6 +1,6 @@
 import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { LoginPage } from '@/components/LoginPage'
-import { ClientDashboard } from '@/components/ClientDashboard'
+import { PatientDashboard } from '@/components/PatientDashboard'
 import { ProviderDashboard } from '@/components/ProviderDashboard'
 import { AppHeader } from '@/components/AppHeader'
 import { Toaster } from '@/components/ui/sonner'
@@ -16,7 +16,7 @@ function AppContent() {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="container mx-auto px-4 md:px-6 py-8">
-        {currentUser.role === 'client' ? <ClientDashboard /> : <ProviderDashboard />}
+        {currentUser.role === 'patient' ? <PatientDashboard /> : <ProviderDashboard />}
       </main>
     </div>
   )

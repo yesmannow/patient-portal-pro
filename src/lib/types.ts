@@ -1,39 +1,46 @@
-export type UserRole = 'client' | 'provider'
+export type UserRole = 'patient' | 'provider'
 
-export type CaseStatus = 'Open' | 'In Review' | 'Waiting on Client' | 'Resolved'
-export type CasePriority = 'low' | 'medium' | 'high'
+export type PreferredContactMethod = 'portal' | 'email' | 'sms' | 'voice'
+export type ConditionType = 'primaryCare' | 'physicalTherapy' | 'chronicCare' | 'postOp' | 'wellness'
+export type PatientStatus = 'new' | 'active' | 'dormant' | 'discharged'
+export type OnboardingSource = 'intakeForm' | 'referral' | 'phone' | 'website'
+
+export type ProviderRole = 'physician' | 'therapist' | 'nurse' | 'admin'
+export type AvailabilityStatus = 'available' | 'busy' | 'away' | 'offline'
+
+export type CaseType = 'question' | 'followUp' | 'billing' | 'clinicalConcern' | 'admin'
+export type Urgency = 'routine' | 'timeSensitive' | 'urgent'
+export type CaseStatus = 'open' | 'awaitingPatient' | 'awaitingProvider' | 'resolved'
 
 export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled'
 
-export type CampaignStatus = 'draft' | 'scheduled' | 'sent'
-
 export interface User {
   id: string
-  name: string
   email: string
   role: UserRole
   avatarUrl?: string
 }
 
-export interface Client {
+export interface Patient {
   id: string
-  name: string
+  firstName: string
+  lastName: string
+  dateOfBirth: string
   email: string
   phone: string
-  dateOfBirth?: string
-  company?: string
-  tags: string[]
-  preferences: {
-    emailNotifications: boolean
-    smsNotifications: boolean
-  }
+  preferredContactMethod: PreferredContactMethod
+  conditionType: ConditionType
+  patientStatus: PatientStatus
+  onboardingSource: OnboardingSource
   createdAt: string
 }
 
 export interface Provider {
   id: string
   name: string
+  role: ProviderRole
   specialty: string
+  availabilityStatus: AvailabilityStatus
   email: string
   phone: string
   avatarUrl?: string
@@ -41,11 +48,12 @@ export interface Provider {
 
 export interface Case {
   id: string
-  clientId: string
+  patientId: string
+  caseType: CaseType
   subject: string
   description: string
+  urgency: Urgency
   status: CaseStatus
-  priority: CasePriority
   assignedProviderId?: string
   createdAt: string
   updatedAt: string
@@ -58,14 +66,14 @@ export interface Message {
   senderName: string
   senderRole: UserRole
   body: string
-  visibility: 'client' | 'internal'
+  visibility: 'patient' | 'internal'
   attachments?: string[]
   timestamp: string
 }
 
 export interface Appointment {
   id: string
-  clientId: string
+  patientId: string
   providerId: string
   dateTime: string
   location: string
@@ -74,26 +82,10 @@ export interface Appointment {
   notes?: string
 }
 
-export interface Campaign {
-  id: string
-  title: string
-  content: string
-  targetTags: string[]
-  scheduledDate: string
-  status: CampaignStatus
-  metrics: {
-    sent: number
-    opened: number
-    clicked: number
-  }
-  createdAt: string
-}
-
 export interface DashboardMetrics {
   totalCases: number
   activeCases: number
   avgResponseTime: number
   resolutionRate: number
   upcomingAppointments: number
-  clientSatisfaction: number
 }
