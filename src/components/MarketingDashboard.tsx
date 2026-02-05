@@ -1,11 +1,17 @@
 import { useKV } from '@github/spark/hooks'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Users, TrendUp, Funnel, Star, Phone,
+import { Users, TrendUp, Funnel, Star, Phone } from '@phosphor-icons/react'
+import { Patient } from '@/lib/types'
 
-  const [patients] = useKV<Patient[]>('patients', [])
+interface FormSubmission {
+  id: string
+  patientId: string
+  formType: string
+  submittedAt: string
+}
 
-
-
+export function MarketingDashboard() {
   const [patients] = useKV<Patient[]>('patients', [])
   const [formSubmissions] = useKV<FormSubmission[]>('form-submissions', [])
 
@@ -15,23 +21,21 @@ import { Users, TrendUp, Funnel, Star, Phone,
 
   const activePatients = (patients ?? []).filter(p => p.patientStatus === 'active')
 
-    .slice(0, 10)
-  const conversionRate = (patients ?? []).l
+  const conversionRate = (patients ?? []).length > 0
+    ? ((activePatients.length / (patients ?? []).length) * 100).toFixed(1)
     : '0'
-  const source
-    phone: Phone,
 
+  const patientsBySource = (patients ?? []).reduce((acc, patient) => {
+    acc[patient.onboardingSource] = (acc[patient.onboardingSource] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
 
-    website: 'Website',
-    referral: 'Referral',
-  }
+  const recentIntakeSubmissions = (formSubmissions ?? [])
+    .filter(sub => sub.formType === 'intake')
+    .slice(0, 10)
 
-      <div>
-        <p className="text-muted-foreground mt-1">Lead funnel and patient 
-
-
-            <CardTitle className="text-sm fo
-          </CardHea
+  const sourceIcons: Record<string, typeof Users> = {
+    website: Users,
     phone: Phone,
     referral: Users,
     intakeForm: Funnel,
@@ -130,103 +134,60 @@ import { Users, TrendUp, Funnel, Star, Phone,
                         <p className="font-medium">{sourceLabels[source] || source}</p>
                         <p className="text-sm text-muted-foreground">{percentage}% of total</p>
                       </div>
-            ) : (
+                    </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold">{count}</p>
                       <p className="text-xs text-muted-foreground">patients</p>
                     </div>
-                        
-                 
-                 
-                  
-                        
-               
-
-              
-              </div>
-          </CardContent>
-      </div>
-      <Card>
-          <CardTitle cla
-            Recent Intake Form Submissions
-          <CardDescript
-        <CardContent>
-            <div className="text-center p
-              <p className="text-muted-foreground
-          ) : (
-              {recentIntakeSubmissions.map(submission => {
-                if (
-                r
-                    <div className="flex-
-                        {patient.firstName} {patient.last
-                      <p className="text-sm text-muted-foreground">
-                      </p>
-                    <div className="text-right">
-                      <p className="text-xs text-mute
-                      </p>
                   </div>
+                )
               })}
-          )}
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="w-5 h-5" weight="duotone" />
+              Recent Intake Form Submissions
+            </CardTitle>
+            <CardDescription>New patient onboarding activity</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentIntakeSubmissions.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No recent intake submissions</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentIntakeSubmissions.map(submission => {
+                  const patient = (patients ?? []).find(p => p.id === submission.patientId)
+                  if (!patient) return null
+                  
+                  return (
+                    <div key={submission.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium">
+                          {patient.firstName} {patient.lastName}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {patient.email}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(submission.submittedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
