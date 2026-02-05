@@ -1,18 +1,17 @@
 import { useState, useMemo } from 'react'
-import { Card, CardContent, CardDescription
+import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/s
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, D
-import { Input } from '@/components/ui/input'
-import { SupportInquiry, SupportMessage, Patient, P
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { SupportInquiry, SupportMessage, Patient, Provider, SupportInquiryCategory, SupportInquiryStatus } from '@/lib/types'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import { Headset, ChatCircle, CreditCard, DesktopTower, Question, PaperPlaneTilt, Clock, CheckCircle, Warning, UserCircle } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import type { SupportInquiry, SupportMessage, Patient, Provider, SupportInquiryCategory, SupportInquiryStatus } from '@/lib/types'
 
 export function SupportDashboard() {
   const [inquiries, setInquiries] = useKV<SupportInquiry[]>('support-inquiries', [])
@@ -30,281 +29,298 @@ export function SupportDashboard() {
     patientId: '',
     category: 'general' as SupportInquiryCategory,
     subject: '',
-    if (activeFilter
+    description: '',
+    priority: 'medium' as 'low' | 'medium' | 'high'
+  })
+
+  const filteredInquiries = useMemo(() => {
+    if (activeFilter === 'all') return inquiries || []
+    return (inquiries || []).filter(inq => inq.status === activeFilter)
   }, [inquiries, activeFilter])
-  co
 
-        const statusOrder = { new: 4, inPro
-      }
+  const sortedInquiries = useMemo(() => {
+    const statusOrder = { new: 0, inProgress: 1, followUp: 2, resolved: 3 }
+    return [...filteredInquiries].sort((a, b) => {
+      const statusDiff = statusOrder[a.status] - statusOrder[b.status]
+      if (statusDiff !== 0) return statusDiff
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
+  }, [filteredInquiries])
 
-    if (!selectedInquiry) retur
-
+  const inquiryMessages = useMemo(() => {
+    if (!selectedInquiry) return []
+    return (messages || []).filter(msg => msg.inquiryId === selectedInquiry.id)
   }, [messages, selectedInquiry])
+
   const getPatientName = (patientId: string) => {
-    return patient ? `${patient.firstName} ${patient.lastNa
-
-    switch (category) {
-      case 'technical': return <DesktopTower className="w-4 
-      d
+    const patient = (patients || []).find(p => p.id === patientId)
+    return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'
   }
-  cons
-      new: 'bg-blue-600 t
 
+  const getCategoryIcon = (category: SupportInquiryCategory) => {
+    switch (category) {
+      case 'technical': return <DesktopTower className="w-4 h-4" weight="duotone" />
+      case 'billing': return <CreditCard className="w-4 h-4" weight="duotone" />
+      case 'insurance': return <Question className="w-4 h-4" weight="duotone" />
+      default: return <Headset className="w-4 h-4" weight="duotone" />
     }
   }
-  const getPriorityBadge = 
+
+  const getStatusBadge = (status: SupportInquiryStatus) => {
+    const variants = {
+      new: 'bg-blue-600 text-white',
+      inProgress: 'bg-amber-600 text-white',
+      followUp: 'bg-purple-600 text-white',
+      resolved: 'bg-green-600 text-white'
+    }
+    return <Badge className={variants[status]}>{status.replace(/([A-Z])/g, ' $1').trim()}</Badge>
+  }
+
+  const getPriorityBadge = (priority: 'low' | 'medium' | 'high') => {
+    const variants = {
+      medium: 'bg-slate-600 text-white',
       high: 'bg-red-600 text-white',
       low: 'bg-slate-500 text-white'
-    return <Badge className={vari
+    }
+    return <Badge className={variants[priority]}>{priority}</Badge>
+  }
 
-    if (!selectedInquiry || !messageText.trim()) 
+  const handleSendMessage = () => {
+    if (!selectedInquiry || !messageText.trim()) return
+
     const newMessage: SupportMessage = {
+      id: `msg-${Date.now()}`,
       inquiryId: selectedInquiry.id,
-   
-
+      senderId: 'staff-001',
+      senderName: 'Support Team',
+      senderRole: 'staff',
+      body: messageText,
+      timestamp: new Date().toISOString(),
       isInternal
+    }
 
+    setMessages(current => [...(current || []), newMessage])
     setMessageText('')
+    setIsInternal(false)
     toast.success('Message sent')
 
-    setInquiries(current => 
-     
-   
-
-            } 
+    setInquiries(current =>
+      (current || []).map(inq =>
+        inq.id === selectedInquiry.id
+          ? { ...inq, updatedAt: new Date().toISOString() }
+          : inq
       )
-    if (selectedInquiry?.id === inqu
+    )
+
+    if (selectedInquiry?.id) {
+      setSelectedInquiry(prev => prev ? { ...prev, updatedAt: new Date().toISOString() } : null)
     }
   }
+
+  const handleUpdateStatus = (inquiryId: string, newStatus: SupportInquiryStatus) => {
+    setInquiries(current =>
+      (current || []).map(inq =>
+        inq.id === inquiryId
+          ? {
+              ...inq,
+              status: newStatus,
+              updatedAt: new Date().toISOString(),
+              resolvedAt: newStatus === 'resolved' ? new Date().toISOString() : inq.resolvedAt,
+              resolvedBy: newStatus === 'resolved' ? 'Support Team' : inq.resolvedBy
+            }
+          : inq
+      )
+    )
+
+    if (selectedInquiry?.id === inquiryId) {
+      setSelectedInquiry(prev => prev ? { ...prev, status: newStatus, updatedAt: new Date().toISOString() } : null)
+    }
+
+    toast.success(`Inquiry status updated to ${newStatus}`)
+  }
+
   const handleCreateInquiry = () => {
-     
+    if (!newInquiry.patientId || !newInquiry.subject || !newInquiry.description) {
+      toast.error('Please fill in all required fields')
+      return
     }
-   
 
+    const inquiry: SupportInquiry = {
+      id: `inq-${Date.now()}`,
+      patientId: newInquiry.patientId,
+      category: newInquiry.category,
       subject: newInquiry.subject,
+      description: newInquiry.description,
+      priority: newInquiry.priority,
       status: 'new',
-      createdAt: new Date().toISOStr
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
-    setInquiries(current => [...(cur
-    s
+
+    setInquiries(current => [...(current || []), inquiry])
+    setShowNewInquiryDialog(false)
+    setNewInquiry({
+      patientId: '',
+      category: 'general',
+      subject: '',
+      description: '',
+      priority: 'medium'
+    })
+    toast.success('Inquiry created successfully')
   }
-  c
 
-    resolved: (inquiries || []).fil
+  const stats = {
+    new: (inquiries || []).filter(i => i.status === 'new').length,
+    inProgress: (inquiries || []).filter(i => i.status === 'inProgress').length,
+    followUp: (inquiries || []).filter(i => i.status === 'followUp').length,
+    resolved: (inquiries || []).filter(i => i.status === 'resolved').length
+  }
 
-
-        <div className="flex items-cente
-            <h1 className="text-4xl font-bold tracking-tight flex items-c
-              Administrative Support
-            <p className="te
-          <Dialog open={showNewIn
-              <Button size
-                New Inqu
-            </DialogTrigger>
-              <D
-     
-
-                  <Label htmlFor="patient-select">Patient</L
-                    <S
-                    </Se
-                      {(patients 
-   
-
-                  </Select>
-
-                  <div classNam
-                    <Select
-              
-                    
-                        <SelectIt
-                        <SelectItem value="general
-                    </Select>
-
-             
-       
-     
-                        <SelectItem value="l
-                        <SelectItem value="high">High</SelectItem>
-     
-                </div>
-   
-
-                    value={newInquiry
-                    placeholder="Brief description of the issue"
-                </div>
-            
-     
-
-                    placeholder="Deta
-                  />
-
-                  Create Inquiry
-              </div>
-          </Dialog>
-
-          <Card className="hover:bor
-              <CardTitle className="text-s
-            </CardHeader>
-     
-
-
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <Warning className="
-            <CardContent>
-   
-
-          <Card className="hover
-              <CardTitle className="text-sm font-medium">Follow-Up
-            </CardHeader>
-              <div className="text-3xl font-bold">{stats.followUp}</div>
-            </CardContent>
-
-
-          
-            <CardContent>
-              <p className="text-xs text-muted-fore
-          </Card>
-
-          <Card className="col-span-1">
-              <CardTitle>
-              </CardTitle>
-            </Car
-              <ScrollArea className="h-[600px]">
-                
-                      <Headset className="w-12 h-12 text-muted-foreground mx-auto mb-
-                    </div>
-                    sortedInquir
-                        key={inquiry.id}
-                        cla
-                       
-                        }`}
-                        <div className="flex ite
-                            
-                          </div>
-                        </div>
-                          {ge
-                        <div className="flex i
-                          <span className="
-                          </span>
-                      </div>
-                  )}
-              </ScrollArea>
-          </Card>
-          <Card className="col-span
-              <div className="flex items-center ju
-                  <CardTitle>{selectedInquiry ? selectedInqu
-                    <CardDescription className="mt-1
-                    </CardDescription
-                </div>
-                  <div className="fl
-                      <Sele
-                      
-
-                        <SelectItem value="followUp">Fol
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50">
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3 text-slate-900">
+                <Headset className="w-10 h-10 text-purple-600" weight="duotone" />
+                Administrative Support
+              </h1>
+              <p className="text-slate-600 mt-2">Non-clinical inquiry management system</p>
+            </div>
+            <Dialog open={showNewInquiryDialog} onOpenChange={setShowNewInquiryDialog}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="bg-purple-600 hover:bg-purple-700">
+                  New Inquiry
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-xl">
+                <DialogHeader>
+                  <DialogTitle>Create Support Inquiry</DialogTitle>
+                  <DialogDescription>Log a new non-clinical inquiry from a patient</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="patient-select">Patient</Label>
+                    <Select value={newInquiry.patientId} onValueChange={(v) => setNewInquiry(prev => ({ ...prev, patientId: v }))}>
+                      <SelectTrigger id="patient-select">
+                        <SelectValue placeholder="Select patient" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(patients || []).map(patient => (
+                          <SelectItem key={patient.id} value={patient.id}>
+                            {patient.firstName} {patient.lastName}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
+                    </Select>
                   </div>
-              </div>
-            <CardContent>
-                <div className="text-ce
-                  <p className="text-m
-              ) : (
-                  <div className="p-4 bg-muted/30 rounded-lg">
-                    <p className="text-sm text-muted-foreground">{selectedInquiry.de
 
-                    <p className="text-sm font-medium mb-3">Communicatio
-                      {inquiryMessages
-                      ) : (
-                        
-
-                                msg.senderRol
-                                  : 'bg-muted/50 mr-8'
-                            >
-                                <UserCircle className="w-4
-                                {msg.is
-                                )}
-                              <p clas
-                                {new Date(msg.timestamp).toLocal
-                            </div>
-                        </div>
-                    </ScrollArea>
-
-                    <div
-                      
-
-                        className="flex-1"
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Category</Label>
+                      <Select value={newInquiry.category} onValueChange={(v) => setNewInquiry(prev => ({ ...prev, category: v as SupportInquiryCategory }))}>
+                        <SelectTrigger id="category">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="billing">Billing</SelectItem>
+                          <SelectItem value="technical">Technical</SelectItem>
+                          <SelectItem value="insurance">Insurance</SelectItem>
+                          <SelectItem value="general">General</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                      <la
-                          type="checkb
-                          onChange={(e) => set
-                        />
-                      </label>
-                    
-                      
 
-              )}
-          </Card>
-      </div>
-  )
+                    <div className="space-y-2">
+                      <Label htmlFor="priority">Priority</Label>
+                      <Select value={newInquiry.priority} onValueChange={(v) => setNewInquiry(prev => ({ ...prev, priority: v as 'low' | 'medium' | 'high' }))}>
+                        <SelectTrigger id="priority">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="subject">Subject</Label>
+                    <Input
+                      id="subject"
+                      value={newInquiry.subject}
+                      onChange={(e) => setNewInquiry(prev => ({ ...prev, subject: e.target.value }))}
+                      placeholder="Brief description of the issue"
+                    />
+                  </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={newInquiry.description}
+                      onChange={(e) => setNewInquiry(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Detailed information about the inquiry"
+                      rows={4}
+                    />
+                  </div>
 
+                  <Button onClick={handleCreateInquiry} className="w-full">
+                    Create Inquiry
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <Card className="hover:border-blue-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('new')}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">New Inquiries</CardTitle>
+                <Clock className="h-4 w-4 text-blue-600" weight="duotone" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{stats.new}</div>
+                <p className="text-xs text-muted-foreground mt-1">Awaiting assignment</p>
+              </CardContent>
+            </Card>
 
+            <Card className="hover:border-amber-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('inProgress')}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                <Warning className="h-4 w-4 text-amber-600" weight="duotone" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{stats.inProgress}</div>
+                <p className="text-xs text-muted-foreground mt-1">Being handled</p>
+              </CardContent>
+            </Card>
 
+            <Card className="hover:border-purple-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('followUp')}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Follow-Up</CardTitle>
+                <ChatCircle className="h-4 w-4 text-purple-600" weight="duotone" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{stats.followUp}</div>
+                <p className="text-xs text-muted-foreground mt-1">Pending response</p>
+              </CardContent>
+            </Card>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.new}</div>
-              <p className="text-xs text-muted-foreground mt-1">Awaiting assignment</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:border-amber-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('inProgress')}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-              <Warning className="h-4 w-4 text-amber-600" weight="duotone" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.inProgress}</div>
-              <p className="text-xs text-muted-foreground mt-1">Being handled</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:border-purple-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('followUp')}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Follow-Up</CardTitle>
-              <ChatCircle className="h-4 w-4 text-purple-600" weight="duotone" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.followUp}</div>
-              <p className="text-xs text-muted-foreground mt-1">Pending response</p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:border-green-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('resolved')}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Resolved</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" weight="duotone" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.resolved}</div>
-              <p className="text-xs text-muted-foreground mt-1">Successfully closed</p>
-            </CardContent>
-          </Card>
+            <Card className="hover:border-green-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('resolved')}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Resolved</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-600" weight="duotone" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{stats.resolved}</div>
+                <p className="text-xs text-muted-foreground mt-1">Successfully closed</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-6">
