@@ -7,9 +7,10 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Case, Message, Patient, Provider } from '@/lib/types'
 import { useAuth } from '@/lib/auth-context'
-import { PaperPlaneRight, Lock } from '@phosphor-icons/react'
+import { PaperPlaneRight, Lock, Sparkle, PencilSimple } from '@phosphor-icons/react'
 import { format } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -49,6 +50,12 @@ const urgencyLabels = {
   routine: 'Routine',
 }
 
+interface ClinicalSummary {
+  clinicalConcern: string
+  actionItems: string
+  status: string
+}
+
 export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDetailDialogProps) {
   const { currentUser } = useAuth()
   const [messages, setMessages] = useKV<Message[]>('messages', [])
@@ -56,6 +63,10 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
   const [providers] = useKV<Provider[]>('providers', [])
   const [messageBody, setMessageBody] = useState('')
   const [visibility, setVisibility] = useState<'patient' | 'internal'>('patient')
+  const [summary, setSummary] = useState<ClinicalSummary | null>(null)
+  const [isSummarizing, setIsSummarizing] = useState(false)
+  const [isEditingSummary, setIsEditingSummary] = useState(false)
+  const [editedSummary, setEditedSummary] = useState<ClinicalSummary | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const caseMessages = (messages ?? [])
@@ -107,6 +118,64 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
       .slice(0, 2) || name.slice(0, 2).toUpperCase()
   }
 
+  const handleSummarizeHistory = async () => {
+    if (caseMessages.length === 0) {
+      toast.error('No messages to summarize')
+      return
+    }
+
+    setIsSummarizing(true)
+    
+    try {
+      const conversationText = caseMessages
+        .map(msg => `[${msg.senderRole === 'provider' ? 'Provider' : 'Patient'}] ${msg.senderName}: ${msg.body}`)
+        .join('\n\n')
+
+      const promptText = `You are a clinical assistant analyzing a patient-provider message thread. Read the conversation below and generate a concise 3-point summary.
+
+Conversation:
+${conversationText}
+
+Case Context:
+- Subject: ${caseItem.subject}
+- Description: ${caseItem.description}
+- Type: ${caseTypeLabels[caseItem.caseType]}
+- Urgency: ${urgencyLabels[caseItem.urgency]}
+
+Generate a JSON summary with exactly three fields:
+1. "clinicalConcern": A single sentence describing the primary medical issue or question
+2. "actionItems": A single sentence listing specific requests the patient has made
+3. "status": A single sentence stating who is currently responsible for the next move (Patient or Provider) and what that next step is
+
+Return your response as valid JSON.`
+
+      const response = await window.spark.llm(promptText, 'gpt-4o', true)
+      const parsedSummary = JSON.parse(response) as ClinicalSummary
+      
+      setSummary(parsedSummary)
+      setEditedSummary(parsedSummary)
+      toast.success('Clinical brief generated')
+    } catch (error) {
+      console.error('Summarization error:', error)
+      toast.error('Failed to generate summary')
+    } finally {
+      setIsSummarizing(false)
+    }
+  }
+
+  const handleSaveSummary = () => {
+    if (editedSummary) {
+      setSummary(editedSummary)
+      setIsEditingSummary(false)
+      toast.success('Clinical brief updated')
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditedSummary(summary)
+    setIsEditingSummary(false)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] h-[80vh] flex flex-col p-0">
@@ -130,10 +199,23 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
               {statusLabels[caseItem.status]}
             </Badge>
           </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground pt-3">
-            <span>Case #{caseItem.id.slice(-6)}</span>
-            <span>•</span>
-            <span>Created {format(new Date(caseItem.createdAt), 'MMM d, yyyy')}</span>
+          <div className="flex items-center justify-between pt-3">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>Case #{caseItem.id.slice(-6)}</span>
+              <span>•</span>
+              <span>Created {format(new Date(caseItem.createdAt), 'MMM d, yyyy')}</span>
+            </div>
+            {currentUser?.role === 'provider' && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSummarizeHistory}
+                disabled={isSummarizing || caseMessages.length === 0}
+              >
+                <Sparkle className="w-4 h-4 mr-2" weight={isSummarizing ? 'fill' : 'regular'} />
+                {isSummarizing ? 'Generating...' : 'Summarize History'}
+              </Button>
+            )}
           </div>
         </DialogHeader>
         
@@ -141,6 +223,119 @@ export function CaseDetailDialog({ case: caseItem, open, onOpenChange }: CaseDet
 
         <ScrollArea ref={scrollRef} className="flex-1 px-6">
           <div className="space-y-4 py-4">
+            {summary && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkle className="w-5 h-5 text-primary" weight="fill" />
+                        <CardTitle className="text-base">Clinical Brief</CardTitle>
+                      </div>
+                      {currentUser?.role === 'provider' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsEditingSummary(!isEditingSummary)}
+                        >
+                          <PencilSimple className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <CardDescription className="text-xs">
+                      AI-generated summary • Not stored permanently
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {isEditingSummary && editedSummary ? (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-semibold text-primary mb-1 block">
+                            Clinical Concern:
+                          </label>
+                          <Textarea
+                            value={editedSummary.clinicalConcern}
+                            onChange={(e) =>
+                              setEditedSummary({ ...editedSummary, clinicalConcern: e.target.value })
+                            }
+                            className="text-sm"
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold text-primary mb-1 block">
+                            Action Items:
+                          </label>
+                          <Textarea
+                            value={editedSummary.actionItems}
+                            onChange={(e) =>
+                              setEditedSummary({ ...editedSummary, actionItems: e.target.value })
+                            }
+                            className="text-sm"
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold text-primary mb-1 block">
+                            Status:
+                          </label>
+                          <Textarea
+                            value={editedSummary.status}
+                            onChange={(e) =>
+                              setEditedSummary({ ...editedSummary, status: e.target.value })
+                            }
+                            className="text-sm"
+                            rows={2}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={handleSaveSummary}>
+                            Save Changes
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <h4 className="text-sm font-semibold text-primary mb-1">
+                            Clinical Concern:
+                          </h4>
+                          <p className="text-sm text-foreground/90">
+                            {summary.clinicalConcern}
+                          </p>
+                        </div>
+                        <Separator />
+                        <div>
+                          <h4 className="text-sm font-semibold text-primary mb-1">
+                            Action Items:
+                          </h4>
+                          <p className="text-sm text-foreground/90">
+                            {summary.actionItems}
+                          </p>
+                        </div>
+                        <Separator />
+                        <div>
+                          <h4 className="text-sm font-semibold text-primary mb-1">
+                            Status:
+                          </h4>
+                          <p className="text-sm text-foreground/90">
+                            {summary.status}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+            
             <AnimatePresence>
               {caseMessages.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
