@@ -25,12 +25,34 @@ const statusLabels: Record<string, string> = {
   resolved: 'Resolved',
 };
 
-\
+const caseTypeLabels: Record<string, string> = {
+  question: 'Question',
+  followUp: 'Follow-Up',
+  billing: 'Billing',
+  clinicalConcern: 'Clinical Concern',
+  admin: 'Administrative',
+};
+
+const urgencyLabels: Record<string, string> = {
+  urgent: 'Urgent',
+  timeSensitive: 'Time-Sensitive',
+  routine: 'Routine',
+};
+
+export function PatientDashboard() {
+  const { currentUser } = useAuth();
+  const [cases] = useKV<Case[]>('cases', []);
+  const [appointments] = useKV<Appointment[]>('appointments', []);
+  const [patients] = useKV<Patient[]>('patients', []);
+  const [newCaseOpen, setNewCaseOpen] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+
   const currentPatient = patients?.find((p) => p.email === currentUser?.email);
   const myCases = (cases || [])
     .filter((c) => c.patientId === currentPatient?.id)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const myAppointments = (appointments || [])
+    .filter((a) => a.patientId === currentPatient?.id)
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
   
   const activeCases = myCases.filter((c) => c.status !== 'resolved');
@@ -106,20 +128,20 @@ const statusLabels: Record<string, string> = {
               </div>
             ) : (
               myCases.slice(0, 5).map((caseItem) => (
-                  key={case
+                <motion.div
                   key={caseItem.id}
-                    className={`cursor-pointer
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <Card
+                    className="cursor-pointer hover:border-primary/30 hover:shadow-md transition-all"
+                    onClick={() => setSelectedCase(caseItem)}
                   >
-                 
-                       
-                              {caseTypeLabels[caseItem.caseType]}
-                            <Badge variant="secondary" classN
-                   
-                          <p className="text-sm f
-                          </p>
-                            {format(new Date(cas
-                        </div>
-                          {caseItem.status === 'resolved' && <CheckCircle
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="outline" className="text-xs">
                               {caseTypeLabels[caseItem.caseType]}
                             </Badge>
                             <Badge variant="secondary" className="text-xs">
@@ -132,43 +154,50 @@ const statusLabels: Record<string, string> = {
                           <p className="text-xs text-muted-foreground mt-2">
                             {format(new Date(caseItem.createdAt), 'MMM d, yyyy')}
                           </p>
-            <CardTitle>Upcomin
+                        </div>
                         <Badge className={statusColors[caseItem.status]}>
                           {caseItem.status === 'resolved' && <CheckCircle className="w-3 h-3 mr-1" weight="fill" />}
                           {statusLabels[caseItem.status]}
-                        </div>
-                          {f
-                        <p classNa
-                    </div
-                </Card>
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))
             )}
-        </Card
+          </CardContent>
+        </Card>
 
-        <>
-
-              
-              onOpenCh
-          )}
-      )}
-  );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Appointments</CardTitle>
+            <CardDescription>Your scheduled sessions</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {myAppointments.length === 0 ? (
+              <div className="text-center py-12">
+                <CalendarBlank className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duotone" />
+                <p className="text-muted-foreground">No appointments scheduled</p>
+              </div>
+            ) : (
+              myAppointments.slice(0, 5).map((appointment) => (
+                <Card key={appointment.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
+                        <div className="text-center">
+                          <p className="text-xs font-semibold text-primary">
+                            {format(new Date(appointment.dateTime), 'MMM')}
+                          </p>
+                          <p className="text-lg font-bold text-primary leading-tight">
+                            {format(new Date(appointment.dateTime), 'd')}
+                          </p>
                         </div>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold">
+                          {format(new Date(appointment.dateTime), 'EEEE, MMMM d')}
+                        </p>
                         <p className="text-sm text-muted-foreground mt-1">
                           {format(new Date(appointment.dateTime), 'h:mm a')} • {appointment.location}
                         </p>
