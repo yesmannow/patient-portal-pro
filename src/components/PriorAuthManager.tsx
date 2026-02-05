@@ -1,34 +1,35 @@
 import { useState, useMemo } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { PriorAuthorization, Patient } from '@/lib/types'
+import { PriorAuthorization, Patient, ProviderRole } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Progress } from '@/components/ui/pro
+import { Progress } from '@/components/ui/progress'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { MagnifyingGlass, Plus, FileText } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+
 interface PriorAuthManagerProps {
+  userRole?: ProviderRole
 }
-export function PriorAuthManager({ userRole = 'bill
-  const [priorAuths, setPriorAuths] = useKV<PriorAuthorization[]>('prio
-  const [searchTerm, setSearch
 
+export function PriorAuthManager({ userRole = 'billing' }: PriorAuthManagerProps) {
+  const [priorAuths, setPriorAuths] = useKV<PriorAuthorization[]>('prior-authorizations', [])
+  const [patients] = useKV<Patient[]>('patients', [])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expiring' | 'low-units'>('all')
+  const [dialogOpen, setDialogOpen] = useState(false)
 
+  const canEdit = userRole === 'billing' || userRole === 'admin'
+
+  const filteredAuths = useMemo(() => {
     const now = new Date()
-
-
-        const patientName = patient ? `${patient.firstName} ${patient.lastName}`.to
-        if (!patientName.includes(searchLower) && !au
-        }
-
-
-        return auth.status === 'active'
-
-        return endDate <= thirtyDaysFromNow && endDate > now
-
-        return remaining <= 3 && remain
-
-    })
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
 
     let filtered = priorAuths.filter(auth => {
       if (searchTerm) {
@@ -139,6 +140,12 @@ export function PriorAuthManager({ userRole = 'bill
     return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'
   }
 
+  const getProgressBarColor = (percentUsed: number) => {
+    if (percentUsed > 90) return 'bg-destructive'
+    if (percentUsed > 75) return 'bg-warning-moderate'
+    return 'bg-accent'
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -163,23 +170,23 @@ export function PriorAuthManager({ userRole = 'bill
                   <div className="space-y-2">
                     <Label htmlFor="patientId">Patient</Label>
                     <Select name="patientId" required>
-                    <Input id="totalU
+                      <SelectTrigger>
                         <SelectValue placeholder="Select patient" />
-                    <Label htmlFor="st
+                      </SelectTrigger>
                       <SelectContent>
-                  <div className="space-y-2">
+                        {patients.map(patient => (
                           <SelectItem key={patient.id} value={patient.id}>
                             {patient.firstName} {patient.lastName}
                           </SelectItem>
-                  <Button t
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
+                  <div className="space-y-2">
                     <Label htmlFor="insurerId">Insurer ID</Label>
                     <Input id="insurerId" name="insurerId" required />
                   </div>
-                className="pl-10"
+                  <div className="space-y-2">
                     <Label htmlFor="authNumber">Authorization Number</Label>
                     <Input id="authNumber" name="authNumber" required />
                   </div>
@@ -203,11 +210,11 @@ export function PriorAuthManager({ userRole = 'bill
                     <Label htmlFor="endDate">End Date</Label>
                     <Input id="endDate" name="endDate" type="date" required />
                   </div>
-              ) : (
+                </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="secondary" onClick={() => setDialogOpen(false)}>
                     Cancel
-                    return 
+                  </Button>
                   <Button type="submit">
                     Add Authorization
                   </Button>
@@ -223,13 +230,13 @@ export function PriorAuthManager({ userRole = 'bill
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-                    
+              <Input
                 placeholder="Search by patient name or auth number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                                <
+                className="pl-10"
               />
-                  
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -258,6 +265,7 @@ export function PriorAuthManager({ userRole = 'bill
                   {filteredAuths.map(auth => {
                     const remaining = auth.totalUnits - auth.usedUnits
                     const percentUsed = (auth.usedUnits / auth.totalUnits) * 100
+                    const progressBarColor = getProgressBarColor(percentUsed)
 
                     return (
                       <Card key={auth.id}>
@@ -270,7 +278,7 @@ export function PriorAuthManager({ userRole = 'bill
                                   <p className="text-sm text-muted-foreground">{auth.serviceName}</p>
                                 </div>
                               </div>
-
+                              {getStatusBadge(auth)}
                             </div>
 
                             <div className="grid grid-cols-3 gap-4 text-sm">
@@ -288,9 +296,28 @@ export function PriorAuthManager({ userRole = 'bill
                             <div className="space-y-2">
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Units Used</span>
-                                <span className="font-medium">{auth.usedUnits} / {auth.totalUnits}</span>
+                                <span className={cn(
+                                  "font-medium",
+                                  percentUsed > 90 && "text-destructive"
+                                )}>
+                                  {auth.usedUnits} / {auth.totalUnits} ({percentUsed.toFixed(0)}%)
+                                </span>
                               </div>
-                              <Progress value={percentUsed} />
+                              <div className="relative w-full h-3 bg-secondary rounded-full overflow-hidden">
+                                <div
+                                  className={cn(
+                                    "h-full transition-all duration-300",
+                                    progressBarColor,
+                                    percentUsed > 90 && "animate-pulse"
+                                  )}
+                                  style={{ width: `${Math.min(percentUsed, 100)}%` }}
+                                />
+                              </div>
+                              {percentUsed > 90 && (
+                                <p className="text-xs text-destructive font-medium">
+                                  ⚠️ Critical: Over 90% of units used
+                                </p>
+                              )}
                             </div>
 
                             {auth.denialReason && (
@@ -329,8 +356,8 @@ export function PriorAuthManager({ userRole = 'bill
               )}
             </TabsContent>
           </Tabs>
-
+        </CardContent>
       </Card>
-
+    </div>
   )
-
+}

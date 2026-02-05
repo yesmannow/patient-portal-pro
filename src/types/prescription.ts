@@ -23,6 +23,7 @@ export interface Medication {
   ndc?: string
   manufacturer?: string
   formularyTier?: string
+  requiresPriorAuth?: boolean
 }
 
 export interface Prescription {
@@ -37,6 +38,7 @@ export interface Prescription {
   status: 'active' | 'discontinued' | 'completed'
   discontinuedDate?: string
   overrideJustification?: string
+  linkedAuthNumber?: string
 }
 
 export interface DrugInteraction {
@@ -65,6 +67,7 @@ export interface FormularyDrug {
   tier: string
   commonDosages: string[]
   contraindications: string[]
+  requiresPriorAuth?: boolean
 }
 
 export interface FormularyDatabase {

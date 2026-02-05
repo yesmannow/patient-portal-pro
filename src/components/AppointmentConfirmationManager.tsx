@@ -1,217 +1,175 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Appointment, PriorAuthorization, Task, Provider } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Appointment, Patient } from '@/lib/types'
-import { WorkflowEngine } from '@/lib/workflow-engine'
-import { Clock, Phone, CheckCircle, Calendar } from '@phosphor-icons/react'
-import { format } from 'date-fns'
+import { Card, CardContent } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { reconcileAuthUnits } from '@/lib/workflow-engine'
+import { CheckCircle, Warning } from '@phosphor-icons/react'
 
-export function AppointmentConfirmationManager() {
+interface AppointmentConfirmationManagerProps {
+  appointment: Appointment
+  onClose: () => void
+}
+
+export function AppointmentConfirmationManager({ appointment, onClose }: AppointmentConfirmationManagerProps) {
   const [appointments, setAppointments] = useKV<Appointment[]>('appointments', [])
-  const [patients] = useKV<Patient[]>('patients', [])
-  const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null)
+  const [priorAuths, setPriorAuths] = useKV<PriorAuthorization[]>('prior-authorizations', [])
+  const [tasks, setTasks] = useKV<Task[]>('tasks', [])
+  const [providers] = useKV<Provider[]>('providers', [])
+  const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    const checkConfirmations = async () => {
-      const confirmationsNeeded = await WorkflowEngine.trigger72HourConfirmation(
-        appointments ?? [],
-        patients ?? []
+  const linkedAuth = priorAuths.find(auth => auth.id === appointment.linkedPriorAuthId)
+
+  const handleCompleteAppointment = async () => {
+    setLoading(true)
+
+    const updateAppointment = (id: string, updates: Partial<Appointment>) => {
+      setAppointments(current => 
+        current.map(apt => apt.id === id ? { ...apt, ...updates } : apt)
       )
-      
-      confirmationsNeeded.forEach(({ appointmentId }) => {
-        setAppointments((current) =>
-          (current ?? []).map(apt =>
-            apt.id === appointmentId 
-              ? { 
-                  ...apt, 
-                  status: 'pending_confirmation',
-                  confirmationSentAt: new Date().toISOString()
-                } 
-              : apt
-          )
-        )
-      })
     }
-    
-    checkConfirmations()
-    const interval = setInterval(checkConfirmations, 60000)
-    return () => clearInterval(interval)
-  }, [appointments, patients, setAppointments])
 
-  const pendingConfirmations = (appointments ?? [])
-    .filter(apt => apt.status === 'pending_confirmation')
-    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
+    const updatePriorAuth = (id: string, updates: Partial<PriorAuthorization>) => {
+      setPriorAuths(current =>
+        current.map(auth => auth.id === id ? { ...auth, ...updates } : auth)
+      )
+    }
 
-  const getPatient = (patientId: string) => {
-    return (patients ?? []).find(p => p.id === patientId)
-  }
+    const createTask = (task: Task) => {
+      setTasks(current => [...current, task])
+    }
 
-  const getHoursUntilAppointment = (dateTime: string) => {
-    const now = new Date()
-    const aptTime = new Date(dateTime)
-    return Math.floor((aptTime.getTime() - now.getTime()) / (1000 * 60 * 60))
-  }
+    updateAppointment(appointment.id, { status: 'completed' })
 
-  const simulatePatientResponse = async (appointmentId: string, response: '1' | '2') => {
-    setSelectedAppointment(appointmentId)
-    
-    setTimeout(async () => {
-      const result = await WorkflowEngine.simulatePatientSMSResponse(
-        appointmentId,
-        response,
-        appointments ?? [],
-        (id, updates) => {
-          setAppointments((current) =>
-            (current ?? []).map(apt =>
-              apt.id === id ? { ...apt, ...updates } : apt
-            )
-          )
-        }
+    if (appointment.linkedPriorAuthId) {
+      const result = await reconcileAuthUnits(
+        appointment.id,
+        appointments,
+        priorAuths,
+        providers,
+        updateAppointment,
+        updatePriorAuth,
+        createTask
       )
 
-      if (result.success) {
-        if (response === '1') {
-          toast.success('Patient confirmed appointment!', {
-            description: 'Status updated to confirmed',
+      if (result.error) {
+        toast.error(`Failed to reconcile units: ${result.error}`)
+      } else {
+        if (result.newTask) {
+          toast.warning('Authorization units depleted!', {
+            description: 'An urgent task has been created for the billing team.',
+            duration: 5000,
           })
         } else {
-          toast.info('Patient requested reschedule', {
-            description: 'Staff will follow up',
+          toast.success('Appointment completed and authorization unit deducted', {
+            description: `${linkedAuth ? linkedAuth.totalUnits - (result.updatedAuth?.usedUnits || 0) : 0} units remaining`,
           })
         }
-      } else {
-        toast.error('Error processing response')
       }
+    } else {
+      toast.success('Appointment marked as completed')
+    }
 
-      setSelectedAppointment(null)
-    }, 1000)
+    setLoading(false)
+    onClose()
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" weight="duotone" />
-            72-Hour Appointment Confirmations
-          </CardTitle>
-          <CardDescription>
-            Automated SMS confirmation system - Patients within 72 hours of their appointment
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {pendingConfirmations.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duotone" />
-              <p className="text-muted-foreground">No appointments pending confirmation</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                System automatically sends SMS 72 hours before appointments
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <div className="flex items-start gap-3">
-                  <Phone className="w-5 h-5 text-blue-600 mt-0.5" weight="duotone" />
-                  <div>
-                    <p className="font-medium text-blue-900 mb-1">Simulated SMS Sent</p>
-                    <p className="text-sm text-blue-700">
-                      "Your appointment is in 72 hours. Reply 1 to Confirm or 2 to Reschedule"
-                    </p>
-                  </div>
-                </div>
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Complete Appointment</DialogTitle>
+          <DialogDescription>
+            Mark this appointment as completed and update linked authorization
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="pt-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Appointment Status:</span>
+                <Badge>{appointment.status}</Badge>
               </div>
+              
+              {appointment.requiresAuthorization && linkedAuth && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Authorization:</span>
+                    <span className="text-sm">{linkedAuth.authNumber}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Current Units:</span>
+                    <span className="text-sm">
+                      {linkedAuth.usedUnits} / {linkedAuth.totalUnits} used
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">After Completion:</span>
+                    <span className="text-sm font-semibold">
+                      {linkedAuth.usedUnits + 1} / {linkedAuth.totalUnits} used
+                    </span>
+                  </div>
 
-              {pendingConfirmations.map(apt => {
-                const patient = getPatient(apt.patientId)
-                const hoursUntil = getHoursUntilAppointment(apt.dateTime)
-                
-                if (!patient) return null
-
-                return (
-                  <Card key={apt.id} className="border-border">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold text-lg">
-                              {patient.firstName} {patient.lastName}
-                            </h4>
-                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
-                              Awaiting Response
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {apt.reason}
+                  {(linkedAuth.usedUnits + 1) >= linkedAuth.totalUnits && (
+                    <div className="rounded-lg border-2 border-warning-severe bg-warning-severe/10 p-3">
+                      <div className="flex items-start gap-2">
+                        <Warning size={20} weight="fill" className="text-warning-severe mt-0.5" />
+                        <div className="text-sm">
+                          <p className="font-semibold text-warning-severe-foreground">
+                            Authorization Units Depleted
                           </p>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <p className="text-muted-foreground text-xs">Appointment Time</p>
-                              <p className="font-medium">
-                                {format(new Date(apt.dateTime), 'MMM d, yyyy • h:mm a')}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground text-xs">Time Until</p>
-                              <p className="font-medium text-accent">{hoursUntil} hours</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground text-xs">Phone</p>
-                              <p className="font-medium">{patient.phone}</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground text-xs">SMS Sent</p>
-                              <p className="font-medium">
-                                {apt.confirmationSentAt
-                                  ? format(new Date(apt.confirmationSentAt), 'h:mm a')
-                                  : 'Pending'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <Button
-                            onClick={() => simulatePatientResponse(apt.id, '1')}
-                            disabled={selectedAppointment === apt.id}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" weight="fill" />
-                            Simulate "1" (Confirm)
-                          </Button>
-                          <Button
-                            onClick={() => simulatePatientResponse(apt.id, '2')}
-                            disabled={selectedAppointment === apt.id}
-                            variant="outline"
-                          >
-                            <Calendar className="w-4 h-4 mr-2" />
-                            Simulate "2" (Reschedule)
-                          </Button>
+                          <p className="text-warning-severe-foreground/80 mt-1">
+                            This will use the last available unit. An urgent task will be created for the billing team to request a new authorization.
+                          </p>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </div>
+                  )}
 
-      <Card className="border-muted">
-        <CardHeader>
-          <CardTitle className="text-base">How It Works</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>• System automatically checks for appointments within 72 hours</p>
-          <p>• SMS sent to patient: "Reply 1 to Confirm or 2 to Reschedule"</p>
-          <p>• Response "1": Appointment status → <span className="text-green-600 font-medium">Confirmed</span> (green in schedule)</p>
-          <p>• Response "2": Staff notified to contact patient for rescheduling</p>
-          <p>• Reduces no-shows and optimizes clinic schedule efficiency</p>
-        </CardContent>
-      </Card>
-    </div>
+                  {(linkedAuth.usedUnits + 1) / linkedAuth.totalUnits > 0.9 && (linkedAuth.usedUnits + 1) < linkedAuth.totalUnits && (
+                    <div className="rounded-lg border border-warning-moderate bg-warning-moderate/10 p-3">
+                      <div className="flex items-start gap-2">
+                        <Warning size={18} weight="fill" className="text-warning-moderate mt-0.5" />
+                        <p className="text-sm text-warning-moderate-foreground">
+                          Warning: Over 90% of units will be used after completion
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {!appointment.linkedPriorAuthId && appointment.requiresAuthorization && (
+                <div className="rounded-lg border border-warning-minor bg-warning-minor/10 p-3">
+                  <p className="text-sm text-warning-minor-foreground">
+                    No authorization linked to this appointment
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCompleteAppointment}
+            disabled={loading || appointment.status === 'completed'}
+            className="gap-2"
+          >
+            <CheckCircle size={18} weight="bold" />
+            {loading ? 'Processing...' : 'Complete Appointment'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

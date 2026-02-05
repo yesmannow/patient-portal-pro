@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -6,11 +6,12 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Calendar } from '@/components/ui/calendar'
-import { Appointment, Provider, ProviderAvailability, Task } from '@/lib/types'
-import { CalendarBlank, Clock, User } from '@phosphor-icons/react'
+import { Badge } from '@/components/ui/badge'
+import { Appointment, Provider, ProviderAvailability, Task, PriorAuthorization, Patient } from '@/lib/types'
+import { CalendarBlank, Clock, User, Warning, CheckCircle } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { format, addDays, startOfWeek, isSameDay } from 'date-fns'
-import { WorkflowEngine } from '@/lib/workflow-engine'
+import { WorkflowEngine, getAuthRequiringServices } from '@/lib/workflow-engine'
 import { cn } from '@/lib/utils'
 
 interface AppointmentBookingDialogProps {
@@ -28,14 +29,37 @@ export function AppointmentBookingDialog({ open, onOpenChange, patientId }: Appo
   const [providers] = useKV<Provider[]>('providers', [])
   const [availability] = useKV<ProviderAvailability[]>('provider-availability', [])
   const [tasks, setTasks] = useKV<Task[]>('tasks', [])
+  const [patients] = useKV<Patient[]>('patients', [])
+  const [priorAuths] = useKV<PriorAuthorization[]>('prior-authorizations', [])
 
   const [selectedProvider, setSelectedProvider] = useState<string>('')
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [selectedTime, setSelectedTime] = useState<string>('')
   const [reason, setReason] = useState<string>('')
   const [location, setLocation] = useState<string>('Main Office')
+  const [selectedAuthId, setSelectedAuthId] = useState<string>('')
 
   const availableProviders = (providers || []).filter(p => p.availabilityStatus === 'available')
+
+  const patient = useMemo(() => {
+    return (patients || []).find(p => p.id === patientId)
+  }, [patients, patientId])
+
+  const requiresAuthorization = useMemo(() => {
+    if (!patient) return false
+    const authServices = getAuthRequiringServices()
+    const service = authServices.find(s => s.conditionType === patient.conditionType)
+    return service?.requiresAuth || false
+  }, [patient])
+
+  const availableAuths = useMemo(() => {
+    if (!requiresAuthorization) return []
+    return (priorAuths || []).filter(auth => 
+      auth.patientId === patientId && 
+      auth.status === 'active' &&
+      (auth.totalUnits - auth.usedUnits) > 0
+    )
+  }, [priorAuths, patientId, requiresAuthorization])
 
   const getAvailableTimeSlotsForDate = (date: Date | undefined): string[] => {
     if (!date || !selectedProvider) return []
@@ -77,6 +101,11 @@ export function AppointmentBookingDialog({ open, onOpenChange, patientId }: Appo
       return
     }
 
+    if (requiresAuthorization && !selectedAuthId) {
+      toast.error('This service requires prior authorization. Please select one from the list.')
+      return
+    }
+
     const appointmentDateTime = new Date(selectedDate)
     const [hours, minutes] = selectedTime.split(':')
     appointmentDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0)
@@ -89,6 +118,8 @@ export function AppointmentBookingDialog({ open, onOpenChange, patientId }: Appo
       location,
       reason,
       status: 'scheduled',
+      requiresAuthorization,
+      linkedPriorAuthId: selectedAuthId || undefined,
     }
 
     setAppointments((current) => [...(current || []), newAppointment])
@@ -111,6 +142,7 @@ export function AppointmentBookingDialog({ open, onOpenChange, patientId }: Appo
     setSelectedTime('')
     setReason('')
     setLocation('Main Office')
+    setSelectedAuthId('')
     onOpenChange(false)
   }
 
@@ -214,6 +246,57 @@ export function AppointmentBookingDialog({ open, onOpenChange, patientId }: Appo
                   rows={3}
                 />
               </div>
+
+              {requiresAuthorization && (
+                <div className="space-y-3 rounded-lg border-2 border-warning-moderate bg-warning-moderate/10 p-4">
+                  <div className="flex items-center gap-2">
+                    <Warning size={20} weight="fill" className="text-warning-moderate" />
+                    <Label className="text-sm font-semibold">Authorization Required</Label>
+                  </div>
+                  
+                  {availableAuths.length === 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        No active prior authorizations found for this patient. 
+                        Please contact billing to request authorization before booking.
+                      </p>
+                      <Badge variant="destructive">Cannot book without authorization</Badge>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="prior-auth" className="text-sm">Select Prior Authorization</Label>
+                      <Select value={selectedAuthId} onValueChange={setSelectedAuthId}>
+                        <SelectTrigger id="prior-auth">
+                          <SelectValue placeholder="Choose authorization..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableAuths.map((auth) => {
+                            const remaining = auth.totalUnits - auth.usedUnits
+                            return (
+                              <SelectItem key={auth.id} value={auth.id}>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span>
+                                    {auth.authNumber} - {auth.serviceName}
+                                  </span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {remaining} units left
+                                  </Badge>
+                                </div>
+                              </SelectItem>
+                            )
+                          })}
+                        </SelectContent>
+                      </Select>
+                      {selectedAuthId && (
+                        <div className="flex items-center gap-2 text-sm text-accent">
+                          <CheckCircle size={16} weight="fill" />
+                          <span>Authorization linked successfully</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
 
@@ -239,7 +322,13 @@ export function AppointmentBookingDialog({ open, onOpenChange, patientId }: Appo
           </Button>
           <Button 
             onClick={handleBookAppointment}
-            disabled={!selectedProvider || !selectedDate || !selectedTime || !reason}
+            disabled={
+              !selectedProvider || 
+              !selectedDate || 
+              !selectedTime || 
+              !reason ||
+              (requiresAuthorization && (!selectedAuthId || availableAuths.length === 0))
+            }
             className="bg-accent hover:bg-accent/90"
           >
             <CalendarBlank className="w-4 h-4 mr-2" />

@@ -356,13 +356,20 @@ export function FormularyImport({ open, onOpenChange, onImport }: FormularyImpor
                               <p className="font-medium">{drug.brandName}</p>
                               <p className="text-sm text-muted-foreground">{drug.genericName}</p>
                             </div>
-                            <Badge variant={
-                              drug.tier === 'Tier 1' ? 'default' :
-                              drug.tier === 'Tier 2' ? 'secondary' :
-                              'outline'
-                            }>
-                              {drug.tier}
-                            </Badge>
+                            <div className="flex flex-col gap-1 items-end">
+                              <Badge variant={
+                                drug.tier === 'Tier 1' ? 'default' :
+                                drug.tier === 'Tier 2' ? 'secondary' :
+                                'outline'
+                              }>
+                                {drug.tier}
+                              </Badge>
+                              {(drug.tier === 'Tier 3' || drug.tier === 'Tier 4' || drug.tier === 'Specialty' || drug.requiresPriorAuth) && (
+                                <Badge className="bg-warning-moderate text-warning-moderate-foreground text-xs">
+                                  Prior Auth Required
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                             <span>{drug.drugClass}</span>

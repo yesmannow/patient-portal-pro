@@ -173,6 +173,8 @@ export interface Appointment {
   notes?: string
   confirmationSentAt?: string
   confirmedAt?: string
+  linkedPriorAuthId?: string
+  requiresAuthorization?: boolean
 }
 
 export interface PaymentCharge {

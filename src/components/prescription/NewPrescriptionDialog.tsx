@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react'
+import { useKV } from '@github/spark/hooks'
 import { Patient, Prescription, Medication, AllergyWarning, DrugInteraction } from '@/types/prescription'
+import { PriorAuthorization } from '@/lib/types'
 import { searchMedications, checkInteractions } from '@/lib/medication-database'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -9,13 +11,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   MagnifyingGlass, 
   Pills, 
   Warning, 
   WarningCircle, 
   CheckCircle,
-  X
+  X,
+  ShieldCheck
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -35,6 +39,7 @@ export function NewPrescriptionDialog({
   activePrescriptions,
   onAddPrescription
 }: NewPrescriptionDialogProps) {
+  const [priorAuths] = useKV<PriorAuthorization[]>('prior-authorizations', [])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null)
   const [dosage, setDosage] = useState('')
@@ -43,6 +48,7 @@ export function NewPrescriptionDialog({
   const [instructions, setInstructions] = useState('')
   const [overrideJustification, setOverrideJustification] = useState('')
   const [acknowledgedWarnings, setAcknowledgedWarnings] = useState(false)
+  const [selectedAuthNumber, setSelectedAuthNumber] = useState('')
 
   const searchResults = useMemo(() => {
     if (searchQuery.length < 2) return []
@@ -87,11 +93,34 @@ export function NewPrescriptionDialog({
     return severeAllergy || severeInteraction
   }, [allergyWarnings, drugInteractions])
 
+  const requiresPriorAuth = useMemo(() => {
+    if (!selectedMedication) return false
+    
+    if (selectedMedication.requiresPriorAuth) return true
+    
+    const tier = selectedMedication.formularyTier
+    if (tier === 'Tier 3' || tier === 'Tier 4' || tier === 'Specialty') {
+      return true
+    }
+    
+    return false
+  }, [selectedMedication])
+
+  const availableAuths = useMemo(() => {
+    if (!requiresPriorAuth) return []
+    return (priorAuths || []).filter(auth => 
+      auth.patientId === patient.id && 
+      auth.status === 'active' &&
+      (auth.totalUnits - auth.usedUnits) > 0
+    )
+  }, [priorAuths, patient.id, requiresPriorAuth])
+
   const handleSelectMedication = (medication: Medication) => {
     setSelectedMedication(medication)
     setSearchQuery('')
     setAcknowledgedWarnings(false)
     setOverrideJustification('')
+    setSelectedAuthNumber('')
     
     if (medication.commonDosages.length > 0) {
       setDosage(medication.commonDosages[0])
@@ -114,6 +143,11 @@ export function NewPrescriptionDialog({
       return
     }
 
+    if (requiresPriorAuth && !selectedAuthNumber) {
+      toast.error('This medication requires prior authorization. Please select one or contact billing.')
+      return
+    }
+
     const prescription: Prescription = {
       id: `rx-${Date.now()}`,
       patientId: patient.id,
@@ -124,7 +158,8 @@ export function NewPrescriptionDialog({
       instructions,
       prescribedDate: new Date().toISOString(),
       status: 'active',
-      overrideJustification: overrideJustification || undefined
+      overrideJustification: overrideJustification || undefined,
+      linkedAuthNumber: selectedAuthNumber || undefined,
     }
 
     onAddPrescription(prescription)
@@ -141,6 +176,7 @@ export function NewPrescriptionDialog({
     setInstructions('')
     setOverrideJustification('')
     setAcknowledgedWarnings(false)
+    setSelectedAuthNumber('')
   }
 
   const handleClose = () => {
@@ -211,7 +247,26 @@ export function NewPrescriptionDialog({
                         <h3 className="font-semibold">{selectedMedication.name}</h3>
                       </div>
                       <p className="text-sm text-muted-foreground">{selectedMedication.genericName}</p>
-                      <Badge variant="outline" className="mt-2">{selectedMedication.drugClass}</Badge>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline">{selectedMedication.drugClass}</Badge>
+                        {selectedMedication.formularyTier && (
+                          <Badge 
+                            variant={
+                              selectedMedication.formularyTier === 'Tier 1' ? 'default' :
+                              selectedMedication.formularyTier === 'Tier 2' ? 'secondary' :
+                              'destructive'
+                            }
+                          >
+                            {selectedMedication.formularyTier}
+                          </Badge>
+                        )}
+                        {requiresPriorAuth && (
+                          <Badge className="bg-warning-moderate text-warning-moderate-foreground gap-1">
+                            <ShieldCheck size={14} weight="fill" />
+                            Prior Auth Required
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <Button
                       onClick={() => setSelectedMedication(null)}
@@ -404,6 +459,57 @@ export function NewPrescriptionDialog({
                       rows={3}
                       className="border-destructive focus-visible:ring-destructive"
                     />
+                  </div>
+                )}
+
+                {requiresPriorAuth && (
+                  <div className="space-y-3 rounded-lg border-2 border-warning-moderate bg-warning-moderate/10 p-4">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck size={20} weight="fill" className="text-warning-moderate" />
+                      <Label className="text-sm font-semibold">Prior Authorization Required</Label>
+                    </div>
+                    
+                    {availableAuths.length === 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">
+                          No active prior authorizations found for this patient. 
+                          This {selectedMedication.formularyTier || 'high-tier'} medication cannot be prescribed without authorization.
+                        </p>
+                        <Badge variant="destructive">Cannot prescribe without authorization</Badge>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="auth-select" className="text-sm">Select Prior Authorization *</Label>
+                        <Select value={selectedAuthNumber} onValueChange={setSelectedAuthNumber}>
+                          <SelectTrigger id="auth-select">
+                            <SelectValue placeholder="Choose authorization..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableAuths.map((auth) => {
+                              const remaining = auth.totalUnits - auth.usedUnits
+                              return (
+                                <SelectItem key={auth.id} value={auth.authNumber}>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span>
+                                      {auth.authNumber} - {auth.serviceName}
+                                    </span>
+                                    <Badge variant="outline" className="text-xs ml-2">
+                                      {remaining} units left
+                                    </Badge>
+                                  </div>
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                        {selectedAuthNumber && (
+                          <div className="flex items-center gap-2 text-sm text-accent">
+                            <CheckCircle size={16} weight="fill" />
+                            <span>Authorization linked successfully</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -550,3 +550,92 @@ export function checkLowUnitsAuthorizations(
   return lowUnitsTasks
 }
 
+export async function reconcileAuthUnits(
+  appointmentId: string,
+  appointments: Appointment[],
+  priorAuths: PriorAuthorization[],
+  providers: any[],
+  updateAppointment: (id: string, updates: Partial<Appointment>) => void,
+  updatePriorAuth: (id: string, updates: Partial<PriorAuthorization>) => void,
+  createTask: (task: Task) => void
+): Promise<{ updatedAuth?: PriorAuthorization; newTask?: Task; error?: string }> {
+  const appointment = appointments.find(a => a.id === appointmentId)
+  
+  if (!appointment) {
+    return { error: 'Appointment not found' }
+  }
+
+  if (appointment.status !== 'completed') {
+    return { error: 'Appointment must be completed to reconcile units' }
+  }
+
+  if (!appointment.linkedPriorAuthId) {
+    return { error: 'No prior authorization linked to this appointment' }
+  }
+
+  const priorAuth = priorAuths.find(a => a.id === appointment.linkedPriorAuthId)
+  
+  if (!priorAuth) {
+    return { error: 'Linked prior authorization not found' }
+  }
+
+  if (priorAuth.status !== 'active') {
+    return { error: 'Prior authorization is not active' }
+  }
+
+  const newUsedUnits = priorAuth.usedUnits + 1
+  const remainingUnits = priorAuth.totalUnits - newUsedUnits
+
+  let newStatus: PriorAuthStatus = priorAuth.status
+  if (remainingUnits <= 0) {
+    newStatus = 'expired'
+  }
+
+  const updatedAuth: PriorAuthorization = {
+    ...priorAuth,
+    usedUnits: newUsedUnits,
+    status: newStatus,
+    updatedAt: new Date().toISOString(),
+  }
+
+  updatePriorAuth(priorAuth.id, {
+    usedUnits: newUsedUnits,
+    status: newStatus,
+    updatedAt: new Date().toISOString(),
+  })
+
+  if (remainingUnits <= 0) {
+    const billingProvider = providers.find(p => p.role === 'billing') || providers[0]
+    
+    if (billingProvider) {
+      const newTask: Task = {
+        id: `task-auth-depleted-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        patientId: appointment.patientId,
+        title: 'URGENT: Prior Authorization Units Depleted',
+        description: `Authorization #${priorAuth.authNumber} for ${priorAuth.serviceName || priorAuth.serviceCode} has used all ${priorAuth.totalUnits} units. Request a new authorization immediately to avoid billing denials.`,
+        dueDate: new Date().toISOString(),
+        assignedToProviderId: billingProvider.id,
+        status: 'todo',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdByWorkflow: 'auto-auth-depleted',
+      }
+
+      createTask(newTask)
+      return { updatedAuth, newTask }
+    }
+  }
+
+  return { updatedAuth }
+}
+
+export function getAuthRequiringServices(): { conditionType: string; requiresAuth: boolean }[] {
+  return [
+    { conditionType: 'physicalTherapy', requiresAuth: true },
+    { conditionType: 'chronicCare', requiresAuth: true },
+    { conditionType: 'postOp', requiresAuth: true },
+    { conditionType: 'primaryCare', requiresAuth: false },
+    { conditionType: 'wellness', requiresAuth: false },
+  ]
+}
+
