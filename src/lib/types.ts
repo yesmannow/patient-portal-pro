@@ -5,14 +5,14 @@ export type ConditionType = 'primaryCare' | 'physicalTherapy' | 'chronicCare' | 
 export type PatientStatus = 'new' | 'active' | 'dormant' | 'discharged'
 export type OnboardingSource = 'intakeForm' | 'referral' | 'phone' | 'website'
 
-export type ProviderRole = 'physician' | 'therapist' | 'nurse' | 'admin'
+export type ProviderRole = 'physician' | 'therapist' | 'nurse' | 'admin' | 'frontDesk' | 'billing' | 'doctor'
 export type AvailabilityStatus = 'available' | 'busy' | 'away' | 'offline'
 
 export type CaseType = 'question' | 'followUp' | 'billing' | 'clinicalConcern' | 'admin'
 export type Urgency = 'routine' | 'timeSensitive' | 'urgent'
 export type CaseStatus = 'open' | 'awaitingPatient' | 'awaitingProvider' | 'resolved'
 
-export type AppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled'
+export type AppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'pending_confirmation'
 
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded'
 export type ChargeType = 'visit' | 'procedure' | 'lab' | 'medication' | 'copay'
@@ -36,6 +36,8 @@ export interface Patient {
   patientStatus: PatientStatus
   onboardingSource: OnboardingSource
   createdAt: string
+  hipaaFormCompleted?: boolean
+  intakeFormCompleted?: boolean
 }
 
 export interface Provider {
@@ -83,6 +85,8 @@ export interface Appointment {
   reason: string
   status: AppointmentStatus
   notes?: string
+  confirmationSentAt?: string
+  confirmedAt?: string
 }
 
 export interface PaymentCharge {
@@ -246,3 +250,38 @@ export interface ResponseTemplate {
   createdAt: string
   updatedAt: string
 }
+
+export interface VoIPCall {
+  id: string
+  phoneNumber: string
+  patientId?: string
+  callStartedAt: string
+  callEndedAt?: string
+  direction: 'inbound' | 'outbound'
+  status: 'active' | 'completed' | 'missed'
+}
+
+export interface LabResult {
+  id: string
+  patientId: string
+  testName: string
+  result: string
+  status: 'pending' | 'completed' | 'abnormal'
+  orderedDate: string
+  completedDate?: string
+}
+
+export interface VitalSigns {
+  id: string
+  patientId: string
+  appointmentId?: string
+  bloodPressureSystolic?: number
+  bloodPressureDiastolic?: number
+  heartRate?: number
+  temperature?: number
+  weight?: number
+  height?: number
+  recordedAt: string
+  recordedBy: string
+}
+

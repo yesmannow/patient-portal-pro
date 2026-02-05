@@ -29,6 +29,56 @@ export class WorkflowEngine {
     return createdTasks
   }
 
+  static async check72HourConfirmations(
+    appointments: Appointment[],
+    updateAppointment: (id: string, updates: Partial<Appointment>) => void
+  ): Promise<Appointment[]> {
+    const now = new Date()
+    const appointmentsNeedingConfirmation: Appointment[] = []
+
+    for (const appointment of appointments) {
+      if (appointment.status === 'scheduled' || appointment.status === 'pending_confirmation') {
+        const appointmentTime = new Date(appointment.dateTime)
+        const hoursUntilAppointment = (appointmentTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+        if (hoursUntilAppointment <= 72 && hoursUntilAppointment > 0 && !appointment.confirmationSentAt) {
+          updateAppointment(appointment.id, {
+            status: 'pending_confirmation',
+            confirmationSentAt: now.toISOString(),
+          })
+          appointmentsNeedingConfirmation.push(appointment)
+        }
+      }
+    }
+
+    return appointmentsNeedingConfirmation
+  }
+
+  static async simulatePatientSMSResponse(
+    appointmentId: string,
+    response: '1' | '2',
+    appointments: Appointment[],
+    updateAppointment: (id: string, updates: Partial<Appointment>) => void
+  ): Promise<{ success: boolean; message: string }> {
+    const appointment = appointments.find(a => a.id === appointmentId)
+    
+    if (!appointment) {
+      return { success: false, message: 'Appointment not found' }
+    }
+
+    if (response === '1') {
+      updateAppointment(appointmentId, {
+        status: 'confirmed',
+        confirmedAt: new Date().toISOString(),
+      })
+      return { success: true, message: 'Appointment confirmed successfully' }
+    } else if (response === '2') {
+      return { success: true, message: 'Reschedule request received. Staff will contact you.' }
+    }
+
+    return { success: false, message: 'Invalid response' }
+  }
+
   static async processPaymentCompletion(
     payment: Payment,
     patients: Patient[],
@@ -168,3 +218,4 @@ export function processNewCase(newCase: Case, providers: any[]): Task | null {
   }
   return null
 }
+

@@ -10,6 +10,11 @@ import { AnalyticsDashboard } from '@/components/AnalyticsDashboard'
 import { FormBuilder } from '@/components/FormBuilder'
 import { ResponseTemplateManager } from '@/components/ResponseTemplateManager'
 import { ProviderAvailabilityManager } from '@/components/ProviderAvailabilityManager'
+import { FrontDeskSchedule } from '@/components/FrontDeskSchedule'
+import { NurseRoomingQueue } from '@/components/NurseRoomingQueue'
+import { BillingDashboard } from '@/components/BillingDashboard'
+import { AppointmentConfirmationManager } from '@/components/AppointmentConfirmationManager'
+import { VoIPHandler } from '@/components/VoIPHandler'
 import { AppHeader } from '@/components/AppHeader'
 import { Toaster } from '@/components/ui/sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -17,10 +22,10 @@ import { useKV } from '@github/spark/hooks'
 import { Patient, Provider } from '@/lib/types'
 
 type PatientView = 'dashboard' | 'profile' | 'forms'
-type ProviderView = 'dashboard' | 'tasks' | 'analytics' | 'forms' | 'templates' | 'availability'
+type ProviderView = 'dashboard' | 'tasks' | 'analytics' | 'forms' | 'templates' | 'availability' | 'automation' | 'voip'
 
 function AppContent() {
-  const { currentUser } = useAuth()
+  const { currentUser, providerRole } = useAuth()
   const [patientView, setPatientView] = useState<PatientView>('dashboard')
   const [providerView, setProviderView] = useState<ProviderView>('dashboard')
   const [patients] = useKV<Patient[]>('patients', [])
@@ -46,15 +51,88 @@ function AppContent() {
   }
 
   const renderProviderContent = () => {
+    if (providerRole === 'frontDesk') {
+      return (
+        <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
+            <TabsTrigger value="dashboard">Schedule</TabsTrigger>
+            <TabsTrigger value="automation">Confirmations</TabsTrigger>
+            <TabsTrigger value="voip">VoIP</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="dashboard" className="space-y-0">
+            <FrontDeskSchedule />
+          </TabsContent>
+          
+          <TabsContent value="automation" className="space-y-0">
+            <AppointmentConfirmationManager />
+          </TabsContent>
+          
+          <TabsContent value="voip" className="space-y-0">
+            <VoIPHandler />
+          </TabsContent>
+        </Tabs>
+      )
+    }
+
+    if (providerRole === 'nurse') {
+      return (
+        <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
+            <TabsTrigger value="dashboard">Rooming Queue</TabsTrigger>
+            <TabsTrigger value="tasks">My Tasks</TabsTrigger>
+            <TabsTrigger value="voip">VoIP</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="dashboard" className="space-y-0">
+            <NurseRoomingQueue />
+          </TabsContent>
+          
+          <TabsContent value="tasks" className="space-y-0">
+            <TaskBoard />
+          </TabsContent>
+          
+          <TabsContent value="voip" className="space-y-0">
+            <VoIPHandler />
+          </TabsContent>
+        </Tabs>
+      )
+    }
+
+    if (providerRole === 'billing') {
+      return (
+        <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
+            <TabsTrigger value="dashboard">Billing</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="voip">VoIP</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="dashboard" className="space-y-0">
+            <BillingDashboard />
+          </TabsContent>
+          
+          <TabsContent value="analytics" className="space-y-0">
+            <AnalyticsDashboard />
+          </TabsContent>
+          
+          <TabsContent value="voip" className="space-y-0">
+            <VoIPHandler />
+          </TabsContent>
+        </Tabs>
+      )
+    }
+
     return (
       <Tabs value={providerView} onValueChange={(v) => setProviderView(v as ProviderView)} className="space-y-6">
-        <TabsList className="grid w-full max-w-4xl grid-cols-6">
+        <TabsList className="grid w-full max-w-4xl grid-cols-7">
           <TabsTrigger value="dashboard">Cases</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="availability">Availability</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="forms">Forms</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="voip">VoIP</TabsTrigger>
         </TabsList>
         
         <TabsContent value="dashboard" className="space-y-0">
@@ -83,6 +161,10 @@ function AppContent() {
 
         <TabsContent value="templates" className="space-y-0">
           <ResponseTemplateManager />
+        </TabsContent>
+
+        <TabsContent value="voip" className="space-y-0">
+          <VoIPHandler />
         </TabsContent>
       </Tabs>
     )

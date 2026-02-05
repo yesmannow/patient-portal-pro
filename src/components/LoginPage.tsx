@@ -5,13 +5,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/lib/auth-context'
-import { UserRole } from '@/lib/types'
+import { useKV } from '@github/spark/hooks'
+import { UserRole, ProviderRole } from '@/lib/types'
 import { SignIn, FirstAidKit } from '@phosphor-icons/react'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<UserRole>('patient')
+  const [providerRole, setProviderRoleState] = useState<ProviderRole>('doctor')
   const { setCurrentUser } = useAuth()
+  const [, setProviderRole] = useKV<ProviderRole | null>('provider-role', null)
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,6 +24,10 @@ export function LoginPage() {
         email,
         role,
       })
+      
+      if (role === 'provider') {
+        setProviderRole(providerRole)
+      }
     }
   }
 
@@ -61,6 +68,23 @@ export function LoginPage() {
                 </SelectContent>
               </Select>
             </div>
+            {role === 'provider' && (
+              <div className="space-y-2">
+                <Label htmlFor="provider-role">Provider Role</Label>
+                <Select value={providerRole} onValueChange={(value) => setProviderRoleState(value as ProviderRole)}>
+                  <SelectTrigger id="provider-role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="doctor">Doctor</SelectItem>
+                    <SelectItem value="nurse">Nurse</SelectItem>
+                    <SelectItem value="frontDesk">Front Desk</SelectItem>
+                    <SelectItem value="billing">Billing</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <Button type="submit" className="w-full" size="lg">
               <SignIn className="w-5 h-5 mr-2" />
               Sign In to Portal

@@ -2,134 +2,114 @@ import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CreditCard, Receipt, CheckCircle, XC
-import { PaymentCharge, Payment, Patient } from '@/lib/types'
+import { Badge } from '@/components/ui/badge'
 import { CreditCard, Receipt, CheckCircle, XCircle } from '@phosphor-icons/react'
+import { PaymentCharge, Payment, Patient } from '@/lib/types'
 import { PaymentDialog } from './PaymentDialog'
-}
 
-  visit: 'Office Visit',
+interface PaymentHistoryProps {
   patientId: string
- 
+}
 
 const chargeTypeLabels: Record<string, string> = {
   visit: 'Office Visit',
+  procedure: 'Medical Procedure',
+  lab: 'Laboratory Work',
+  medication: 'Medication',
+  copay: 'Copayment',
+}
 
+export function PaymentHistory({ patientId }: PaymentHistoryProps) {
+  const [charges] = useKV<PaymentCharge[]>('payment-charges', [])
+  const [selectedCharge, setSelectedCharge] = useState<PaymentCharge | null>(null)
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
 
-    setSelectedCharge(charg
+  const patientCharges = (charges ?? []).filter(c => c.patientId === patientId)
+    .sort((a, b) => new Date(b.dateOfService).getTime() - new Date(a.dateOfService).getTime())
+
+  const totalBalance = patientCharges.reduce((sum, c) => sum + c.balanceDue, 0)
+  const totalPaid = patientCharges.reduce((sum, c) => sum + c.paidAmount, 0)
+
+  const handlePayNow = (charge: PaymentCharge) => {
+    setSelectedCharge(charge)
+    setPaymentDialogOpen(true)
   }
- 
 
+  const handlePaymentComplete = () => {
+    setPaymentDialogOpen(false)
+    setSelectedCharge(null)
   }
+
   return (
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold tracking-tight">Paymen
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Payment History</h2>
+          <p className="text-muted-foreground">View and manage your account balance</p>
         </div>
-          <div className="text-right">
+      </div>
 
-        )}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Outstanding Balance</CardTitle>
+            <CardDescription>Amount due for services</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-accent">
+              ${totalBalance.toFixed(2)}
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              {patientCharges.filter(c => c.balanceDue > 0).length} unpaid charge(s)
+            </p>
+          </CardContent>
+        </Card>
 
         <Card>
-
+          <CardHeader>
+            <CardTitle>Total Paid</CardTitle>
+            <CardDescription>Lifetime payments</CardDescription>
           </CardHeader>
-
-              {patientCharges.filter(c => c.balance
-          </CardContent>
-
-   
-
           <CardContent>
-              ${patientCharges.reduce((sum, c) => sum + c.p
-            <p className="text-
+            <div className="text-3xl font-bold text-green-600">
+              ${totalPaid.toFixed(2)}
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Across {patientCharges.length} charge(s)
             </p>
-   
-
-          
-          </CardHeader>
-            <div className="text-2xl font-bold">
-            <
           </CardContent>
+        </Card>
       </div>
+
       <Card>
-          <CardTitle>Recent Charg
+        <CardHeader>
+          <CardTitle>Recent Charges</CardTitle>
+          <CardDescription>View your billing history and make payments</CardDescription>
         </CardHeader>
+        <CardContent>
           {patientCharges.length === 0 ? (
-              <Receipt className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duo
-            </di
-          
-            
-
-                        <div className="flex item
-              
+            <div className="text-center py-12">
+              <Receipt className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duotone" />
+              <p className="text-muted-foreground">No charges found</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {patientCharges.map((charge) => (
+                <Card key={charge.id} className="border-border">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline">
+                            {chargeTypeLabels[charge.chargeType] || charge.chargeType}
+                          </Badge>
                           <span className="text-xs text-muted-foreground">
+                            {new Date(charge.dateOfService).toLocaleDateString()}
                           </span>
-                        <p className="font-medium mb-2">{charge.d
-                       
-                       
-                          <div>
-                            <p className="font-semibold text-g
-                          <div>
-                
+                        </div>
+                        <p className="font-medium mb-2">{charge.description}</p>
                         
-               
-
-              
-                          <Button onClick={() => handlePayNow(charge)} className="bg-accent 
-                            Pay Now
-                        ) : (
-                       
-                       
-                      </div>
-                  </CardContent>
-              ))}
-          )}
-      </Card>
-      {selectedC
-          open={paymentD
-          charg
-
-      )}
-  )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                           <div>
                             <p className="text-muted-foreground text-xs">Total Charge</p>
                             <p className="font-semibold">${charge.amount.toFixed(2)}</p>
