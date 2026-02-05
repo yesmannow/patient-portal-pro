@@ -1,70 +1,59 @@
 import { useKV } from '@github/spark/hooks'
-import { Badge } from '@/components/ui/badge'
-import { Patient } from '@/lib/types'
-interface FormSubmission {
-  patientId: string
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Users, TrendUp, Funnel, Star, Phone } from '@phosphor-icons/react'
+import { Patient, FormSubmission } from '@/lib/types'
 
+export function MarketingDashboard() {
+  const [patients] = useKV<Patient[]>('patients', [])
+  const [formSubmissions] = useKV<FormSubmission[]>('form-submissions', [])
 
-  const [pat
+  const newPatients = (patients ?? []).filter(p => p.patientStatus === 'new')
+  const activePatients = (patients ?? []).filter(p => p.patientStatus === 'active')
+  
+  const conversionRate = patients && patients.length > 0 
+    ? Math.round((activePatients.length / patients.length) * 100)
+    : 0
 
-    .filter(p => p
-
-
-
-
-    acc[patient.onboardingSource] = (acc[patient.onbo
+  const patientsBySource = (patients ?? []).reduce((acc, patient) => {
+    acc[patient.onboardingSource] = (acc[patient.onboardingSource] || 0) + 1
+    return acc
   }, {} as Record<string, number>)
 
+  const recentIntakeSubmissions = (formSubmissions ?? [])
+    .filter(sub => sub.formDefinitionId.includes('intake'))
     .slice(0, 10)
-  const sourceIcons: Record<string, typeof 
+
+  const sourceIcons: Record<string, typeof Users> = {
+    intakeForm: Users,
+    website: Users,
     phone: Phone,
+    referral: Star,
+  }
 
-
-
+  const sourceLabels: Record<string, string> = {
+    intakeForm: 'Intake Form',
+    website: 'Website',
+    phone: 'Phone',
     referral: 'Referral',
   }
-  return 
 
-        <p className="text-muted-foreground mt-1">Lead funnel and pati
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Lead Funnel</h2>
+        <p className="text-muted-foreground mt-1">Lead funnel and patient acquisition metrics</p>
+      </div>
 
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-            <CardTitle className="
-
-            <div className="text-2xl font-bold">{newPatie
-              Awaiting conversion
-          </CardC
-
-          <CardHeader className="flex flex-row items-
-            <Star c
-          <CardCo
-            <p class
-            </p>
-   
-
-            <CardTitle className="text-sm font-m
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">New Leads</CardTitle>
+            <Users className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
-            <div classNa
-              Lead to act
-          </CardContent>
-
-
-          
           <CardContent>
-           
-            </p>
-        </Card>
-
-
-            <CardTitle className="flex items-cent
-              
-            <CardDescription>Patient acquisition channels</CardDescription>
-          <CardContent>
-              {Object.entries(patientsBySource).map(([source, c
-                const p
-                return 
-                    <div className="flex items-center gap-3">
-                        <Icon className="w-5 h-5 text-primary"
-                      <div>
+            <div className="text-2xl font-bold">{newPatients.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Awaiting conversion
             </p>
           </CardContent>
         </Card>
@@ -135,13 +124,13 @@ interface FormSubmission {
                         <p className="text-sm text-muted-foreground">{percentage}% of total</p>
                       </div>
                     </div>
-
+                    <div className="text-right">
                       <p className="text-2xl font-bold">{count}</p>
                       <p className="text-xs text-muted-foreground">patients</p>
                     </div>
-
+                  </div>
                 )
-
+              })}
             </div>
           </CardContent>
         </Card>
@@ -189,5 +178,5 @@ interface FormSubmission {
         </Card>
       </div>
     </div>
-
+  )
 }
