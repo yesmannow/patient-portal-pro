@@ -187,10 +187,19 @@ export interface AnalyticsInsight {
   generatedAt: string
 }
 
+export interface TemplateFolder {
+  id: string
+  name: string
+  color: string
+  icon?: string
+  createdAt: string
+}
+
 export interface ResponseTemplate {
   id: string
   name: string
   category: CaseType
+  folderId?: string
   promptKeywords: string[]
   templateText: string
   useAI: boolean

@@ -9,11 +9,12 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ResponseTemplate, CaseType } from '@/lib/types'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { ResponseTemplate, CaseType, TemplateFolder } from '@/lib/types'
 import { defaultResponseTemplates } from '@/lib/default-templates'
-import { Plus, Trash, Sparkle, Pencil, Info } from '@phosphor-icons/react'
+import { Plus, Trash, Sparkle, Pencil, Info, Folder, FolderOpen, CaretDown, CaretRight } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 const caseTypeLabels: Record<CaseType, string> = {
@@ -26,15 +27,24 @@ const caseTypeLabels: Record<CaseType, string> = {
 
 export function ResponseTemplateManager() {
   const [templates, setTemplates] = useKV<ResponseTemplate[]>('response-templates', [])
+  const [folders, setFolders] = useKV<TemplateFolder[]>('template-folders', [])
   const [isCreating, setIsCreating] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<ResponseTemplate | null>(null)
+  const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false)
+  const [openFolders, setOpenFolders] = useState<Set<string>>(new Set())
   
   const [formData, setFormData] = useState({
     name: '',
     category: 'question' as CaseType,
+    folderId: '' as string,
     promptKeywords: '',
     templateText: '',
     useAI: false,
+  })
+
+  const [folderFormData, setFolderFormData] = useState({
+    name: '',
+    color: 'oklch(0.50 0.12 230)',
   })
 
   const handleLoadDefaults = () => {
@@ -46,6 +56,7 @@ export function ResponseTemplateManager() {
     setFormData({
       name: '',
       category: 'question',
+      folderId: '',
       promptKeywords: '',
       templateText: '',
       useAI: false,
@@ -63,6 +74,7 @@ export function ResponseTemplateManager() {
       id: `template-${Date.now()}`,
       name: formData.name,
       category: formData.category,
+      folderId: formData.folderId || undefined,
       promptKeywords: formData.promptKeywords.split(',').map(k => k.trim()).filter(Boolean),
       templateText: formData.templateText,
       useAI: formData.useAI,
@@ -89,6 +101,7 @@ export function ResponseTemplateManager() {
               ...t,
               name: formData.name,
               category: formData.category,
+              folderId: formData.folderId || undefined,
               promptKeywords: formData.promptKeywords.split(',').map(k => k.trim()).filter(Boolean),
               templateText: formData.templateText,
               useAI: formData.useAI,
@@ -112,6 +125,7 @@ export function ResponseTemplateManager() {
     setFormData({
       name: template.name,
       category: template.category,
+      folderId: template.folderId || '',
       promptKeywords: template.promptKeywords.join(', '),
       templateText: template.templateText,
       useAI: template.useAI,
@@ -119,13 +133,55 @@ export function ResponseTemplateManager() {
     setIsCreating(true)
   }
 
-  const templatesByCategory = (templates ?? []).reduce((acc, template) => {
-    if (!acc[template.category]) {
-      acc[template.category] = []
+  const handleCreateFolder = () => {
+    if (!folderFormData.name.trim()) {
+      toast.error('Folder name is required')
+      return
     }
-    acc[template.category].push(template)
+
+    const newFolder: TemplateFolder = {
+      id: `folder-${Date.now()}`,
+      name: folderFormData.name,
+      color: folderFormData.color,
+      createdAt: new Date().toISOString(),
+    }
+
+    setFolders((current) => [...(current ?? []), newFolder])
+    toast.success('Folder created')
+    setFolderFormData({ name: '', color: 'oklch(0.50 0.12 230)' })
+    setIsFolderDialogOpen(false)
+  }
+
+  const handleDeleteFolder = (folderId: string) => {
+    const folderTemplates = (templates ?? []).filter(t => t.folderId === folderId)
+    if (folderTemplates.length > 0) {
+      toast.error(`Cannot delete folder with ${folderTemplates.length} templates. Move or delete templates first.`)
+      return
+    }
+    setFolders((current) => (current ?? []).filter((f) => f.id !== folderId))
+    toast.success('Folder deleted')
+  }
+
+  const toggleFolder = (folderId: string) => {
+    setOpenFolders((prev) => {
+      const next = new Set(prev)
+      if (next.has(folderId)) {
+        next.delete(folderId)
+      } else {
+        next.add(folderId)
+      }
+      return next
+    })
+  }
+
+  const templatesByFolder = (templates ?? []).reduce((acc, template) => {
+    const key = template.folderId || 'uncategorized'
+    if (!acc[key]) {
+      acc[key] = []
+    }
+    acc[key].push(template)
     return acc
-  }, {} as Record<CaseType, ResponseTemplate[]>)
+  }, {} as Record<string, ResponseTemplate[]>)
 
   return (
     <div className="space-y-6">
@@ -152,6 +208,62 @@ export function ResponseTemplateManager() {
               Load Defaults
             </Button>
           )}
+          <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Folder className="w-4 h-4 mr-2" />
+                New Folder
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[400px]">
+              <DialogHeader>
+                <DialogTitle>Create Template Folder</DialogTitle>
+                <DialogDescription>
+                  Organize your templates into folders for better management
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="folder-name">Folder Name</Label>
+                  <Input
+                    id="folder-name"
+                    placeholder="e.g., Appointment Templates"
+                    value={folderFormData.name}
+                    onChange={(e) => setFolderFormData({ ...folderFormData, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="folder-color">Folder Color</Label>
+                  <div className="flex gap-2">
+                    {[
+                      { label: 'Blue', value: 'oklch(0.50 0.12 230)' },
+                      { label: 'Purple', value: 'oklch(0.50 0.15 280)' },
+                      { label: 'Green', value: 'oklch(0.55 0.15 150)' },
+                      { label: 'Orange', value: 'oklch(0.60 0.15 50)' },
+                      { label: 'Red', value: 'oklch(0.55 0.20 25)' },
+                    ].map((color) => (
+                      <button
+                        key={color.value}
+                        type="button"
+                        className="w-10 h-10 rounded-md border-2 transition-all"
+                        style={{
+                          backgroundColor: color.value,
+                          borderColor: folderFormData.color === color.value ? 'oklch(0.25 0.015 240)' : 'transparent',
+                        }}
+                        onClick={() => setFolderFormData({ ...folderFormData, color: color.value })}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end pt-4">
+                  <Button variant="outline" onClick={() => setIsFolderDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateFolder}>Create Folder</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Dialog open={isCreating} onOpenChange={(open) => {
             setIsCreating(open)
             if (!open) resetForm()
@@ -193,6 +305,29 @@ export function ResponseTemplateManager() {
                     {Object.entries(caseTypeLabels).map(([value, label]) => (
                       <SelectItem key={value} value={value}>
                         {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="folder">Folder (Optional)</Label>
+                <Select
+                  value={formData.folderId}
+                  onValueChange={(value) => setFormData({ ...formData, folderId: value })}
+                >
+                  <SelectTrigger id="folder">
+                    <SelectValue placeholder="No folder" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No folder</SelectItem>
+                    {(folders ?? []).map((folder) => (
+                      <SelectItem key={folder.id} value={folder.id}>
+                        <div className="flex items-center gap-2">
+                          <Folder className="w-4 h-4" style={{ color: folder.color }} />
+                          {folder.name}
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -275,79 +410,205 @@ export function ResponseTemplateManager() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {Object.entries(caseTypeLabels).map(([categoryKey, categoryLabel]) => {
-            const categoryTemplates = templatesByCategory[categoryKey as CaseType] || []
-            if (categoryTemplates.length === 0) return null
-
+        <div className="space-y-4">
+          {(folders ?? []).map((folder) => {
+            const folderTemplates = templatesByFolder[folder.id] || []
+            const isOpen = openFolders.has(folder.id)
+            
             return (
-              <div key={categoryKey}>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  {categoryLabel}
-                  <Badge variant="secondary">{categoryTemplates.length}</Badge>
-                </h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {categoryTemplates.map((template) => (
-                    <motion.div
-                      key={template.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Card className="h-full">
-                        <CardHeader>
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <CardTitle className="text-base flex items-center gap-2">
-                                {template.name}
-                                {template.useAI && (
-                                  <Sparkle className="w-4 h-4 text-primary" weight="fill" />
-                                )}
-                              </CardTitle>
-                              {template.promptKeywords.length > 0 && (
-                                <CardDescription className="mt-2">
-                                  <div className="flex flex-wrap gap-1">
-                                    {template.promptKeywords.map((keyword, idx) => (
-                                      <Badge key={idx} variant="outline" className="text-xs">
-                                        {keyword}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </CardDescription>
-                              )}
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => handleEdit(template)}
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive"
-                                onClick={() => handleDelete(template.id)}
-                              >
-                                <Trash className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground line-clamp-3">
-                            {template.templateText}
+              <Collapsible
+                key={folder.id}
+                open={isOpen}
+                onOpenChange={() => toggleFolder(folder.id)}
+              >
+                <Card>
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-accent/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {isOpen ? (
+                            <FolderOpen className="w-5 h-5" style={{ color: folder.color }} weight="duotone" />
+                          ) : (
+                            <Folder className="w-5 h-5" style={{ color: folder.color }} weight="duotone" />
+                          )}
+                          <CardTitle className="text-base">{folder.name}</CardTitle>
+                          <Badge variant="secondary">{folderTemplates.length}</Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteFolder(folder.id)
+                            }}
+                          >
+                            <Trash className="w-4 h-4" />
+                          </Button>
+                          {isOpen ? (
+                            <CaretDown className="w-5 h-5 text-muted-foreground" />
+                          ) : (
+                            <CaretRight className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0">
+                      <AnimatePresence>
+                        {folderTemplates.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            No templates in this folder
                           </p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
+                        ) : (
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {folderTemplates.map((template) => (
+                              <motion.div
+                                key={template.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <Card className="h-full">
+                                  <CardHeader>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1">
+                                        <CardTitle className="text-base flex items-center gap-2">
+                                          {template.name}
+                                          {template.useAI && (
+                                            <Sparkle className="w-4 h-4 text-primary" weight="fill" />
+                                          )}
+                                        </CardTitle>
+                                        <CardDescription className="mt-1">
+                                          <Badge variant="outline" className="text-xs">
+                                            {caseTypeLabels[template.category]}
+                                          </Badge>
+                                        </CardDescription>
+                                        {template.promptKeywords.length > 0 && (
+                                          <CardDescription className="mt-2">
+                                            <div className="flex flex-wrap gap-1">
+                                              {template.promptKeywords.map((keyword, idx) => (
+                                                <Badge key={idx} variant="outline" className="text-xs">
+                                                  {keyword}
+                                                </Badge>
+                                              ))}
+                                            </div>
+                                          </CardDescription>
+                                        )}
+                                      </div>
+                                      <div className="flex gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => handleEdit(template)}
+                                        >
+                                          <Pencil className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-destructive"
+                                          onClick={() => handleDelete(template.id)}
+                                        >
+                                          <Trash className="w-4 h-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <p className="text-sm text-muted-foreground line-clamp-3">
+                                      {template.templateText}
+                                    </p>
+                                  </CardContent>
+                                </Card>
+                              </motion.div>
+                            ))}
+                          </div>
+                        )}
+                      </AnimatePresence>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
             )
           })}
+
+          {templatesByFolder['uncategorized'] && templatesByFolder['uncategorized'].length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                Uncategorized Templates
+                <Badge variant="secondary">{templatesByFolder['uncategorized'].length}</Badge>
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                {templatesByFolder['uncategorized'].map((template) => (
+                  <motion.div
+                    key={template.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Card className="h-full">
+                      <CardHeader>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <CardTitle className="text-base flex items-center gap-2">
+                              {template.name}
+                              {template.useAI && (
+                                <Sparkle className="w-4 h-4 text-primary" weight="fill" />
+                              )}
+                            </CardTitle>
+                            <CardDescription className="mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {caseTypeLabels[template.category]}
+                              </Badge>
+                            </CardDescription>
+                            {template.promptKeywords.length > 0 && (
+                              <CardDescription className="mt-2">
+                                <div className="flex flex-wrap gap-1">
+                                  {template.promptKeywords.map((keyword, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-xs">
+                                      {keyword}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </CardDescription>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleEdit(template)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                              onClick={() => handleDelete(template.id)}
+                            >
+                              <Trash className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                          {template.templateText}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
