@@ -1,4 +1,4 @@
-import { WorkflowTemplate, Task, WorkflowEventType, Case, FormSubmission, Appointment } from './types'
+import { WorkflowTemplate, Task, WorkflowEventType, Case, FormSubmission, Appointment, Patient, Payment } from './types'
 
 export class WorkflowEngine {
   static async processEvent(
@@ -27,6 +27,45 @@ export class WorkflowEngine {
     }
 
     return createdTasks
+  }
+
+  static async processPaymentCompletion(
+    payment: Payment,
+    patients: Patient[],
+    updatePatient: (patientId: string, updates: Partial<Patient>) => void
+  ): Promise<void> {
+    const patient = patients.find(p => p.id === payment.patientId)
+    if (patient && patient.patientStatus !== 'active') {
+      updatePatient(payment.patientId, { patientStatus: 'active' })
+    }
+  }
+
+  static async processAppointmentBooking(
+    appointment: Appointment,
+    providers: any[]
+  ): Promise<Task | null> {
+    const now = new Date()
+    const dueDate = new Date(appointment.dateTime)
+    dueDate.setHours(dueDate.getHours() - 24)
+
+    const assignedProvider = providers.find(p => p.role === 'admin') || providers[0]
+
+    if (!assignedProvider) {
+      return null
+    }
+
+    return {
+      id: `task-confirm-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      patientId: appointment.patientId,
+      title: 'Confirm Appointment',
+      description: `Confirm appointment scheduled for ${new Date(appointment.dateTime).toLocaleString()}. Reason: ${appointment.reason}`,
+      dueDate: dueDate.toISOString(),
+      assignedToProviderId: assignedProvider.id,
+      status: 'todo',
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+      createdByWorkflow: 'auto-appointment-confirmation',
+    }
   }
 
   static createUrgentCaseTask(caseData: Case, providers: any[]): Task | null {

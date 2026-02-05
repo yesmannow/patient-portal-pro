@@ -12,7 +12,10 @@ export type CaseType = 'question' | 'followUp' | 'billing' | 'clinicalConcern' |
 export type Urgency = 'routine' | 'timeSensitive' | 'urgent'
 export type CaseStatus = 'open' | 'awaitingPatient' | 'awaitingProvider' | 'resolved'
 
-export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled'
+export type AppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled'
+
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded'
+export type ChargeType = 'visit' | 'procedure' | 'lab' | 'medication' | 'copay'
 
 export interface User {
   id: string
@@ -80,6 +83,43 @@ export interface Appointment {
   reason: string
   status: AppointmentStatus
   notes?: string
+}
+
+export interface PaymentCharge {
+  id: string
+  patientId: string
+  chargeType: ChargeType
+  description: string
+  amount: number
+  insuranceCovered: number
+  patientResponsibility: number
+  paidAmount: number
+  balanceDue: number
+  dateOfService: string
+  createdAt: string
+}
+
+export interface Payment {
+  id: string
+  chargeId: string
+  patientId: string
+  amount: number
+  paymentMethod: string
+  status: PaymentStatus
+  transactionId?: string
+  createdAt: string
+  processedAt?: string
+}
+
+export interface ProviderAvailability {
+  id: string
+  providerId: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  isAvailable: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export interface DashboardMetrics {

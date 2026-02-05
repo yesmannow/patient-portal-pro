@@ -61,6 +61,27 @@ This platform includes role-based multi-view dashboards, workflow automation eng
 - **Progression**: Provider views case → System suggests matching templates → Provider selects template or generates AI response → AI personalizes template with case context → Provider reviews and edits → Provider sends message
 - **Success criteria**: Templates accurately match case keywords; AI personalization maintains professional tone; providers can edit before sending; template library is easily manageable
 
+### Patient Financial & Payment Module
+- **Functionality**: Displays patient payment history with charges, balances, insurance adjustments; secure payment dialog for card entry (integrated with payment processor stub); automatic payment confirmation
+- **Purpose**: Enables patients to manage financial obligations directly through the portal, reducing administrative burden
+- **Trigger**: Patient navigates to Payments tab; clicks "Pay Now" on outstanding balance
+- **Progression**: Patient views payment history → Identifies outstanding balance → Clicks "Pay Now" → Enters card details in secure dialog → Submits payment → Receives confirmation → Status updates to "Paid" → Workflow updates patient status to "Active"
+- **Success criteria**: Payment history displays accurately; payment dialog validates card input; successful payments trigger workflow automation; patient status updates correctly
+
+### Provider Availability Management
+- **Functionality**: Weekly calendar view allowing providers to mark time blocks as "Available" or "Blocked"; granular control over scheduling windows
+- **Purpose**: Gives providers control over their schedule and ensures patients can only book during confirmed availability
+- **Trigger**: Provider clicks "Set Availability" in dashboard; modifies time blocks
+- **Progression**: Provider opens availability tool → Views weekly calendar → Clicks time blocks to toggle availability → Saves changes → Availability instantly reflects in patient self-scheduling view
+- **Success criteria**: Availability changes save and persist; patient booking view respects provider availability; visual clarity on available vs blocked times
+
+### Patient Self-Scheduling
+- **Functionality**: Calendar view filtered by provider availability; appointment booking creates both Appointment record and confirmation Task; automatic notifications
+- **Purpose**: Reduces administrative overhead by allowing patients to book their own appointments during available times
+- **Trigger**: Patient clicks "Book New Appointment" in dashboard
+- **Progression**: Patient clicks "Book Appointment" → Views calendar filtered by provider availability → Selects date and time → Enters reason for visit → Confirms booking → Appointment created → Confirmation task auto-generated for staff → Patient receives confirmation
+- **Success criteria**: Calendar shows only available slots; appointment saves correctly; task automatically created for staff; no double-booking possible
+
 ## Edge Case Handling
 
 - **Missing Patient Data**: Form submissions and task creation gracefully handle incomplete patient records by creating placeholder entries and flagging for manual review.
