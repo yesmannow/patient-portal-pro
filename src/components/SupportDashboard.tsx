@@ -1,19 +1,18 @@
 import { useState, useMemo } from 'react'
-import { Card, CardContent, CardDescription
+import { useKV } from '@github/spark/hooks'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Select, SelectContent, SelectItem, Sel
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
+import { 
   SupportInquiry, 
+  SupportMessage, 
   Patient, 
-  SupportInquiryCategory, 
-} from '@/lib/types'
-  Headset, 
-  CreditC
-  Question, 
-  Clock, 
-  Warning, 
-  Plus
   SupportInquiryCategory, 
   SupportInquiryStatus 
 } from '@/lib/types'
@@ -30,38 +29,35 @@ import {
   UserCircle,
   Plus
 } from '@phosphor-icons/react'
+import { toast } from 'sonner'
+
+export function SupportDashboard() {
+  const [inquiries, setInquiries] = useKV<SupportInquiry[]>('support-inquiries', [])
+  const [messages, setMessages] = useKV<SupportMessage[]>('support-messages', [])
+  const [patients] = useKV<Patient[]>('patients', [])
+  
+  const [selectedInquiry, setSelectedInquiry] = useState<SupportInquiry | null>(null)
+  const [messageText, setMessageText] = useState('')
+  const [isInternal, setIsInternal] = useState(false)
+  const [activeFilter, setActiveFilter] = useState<'all' | SupportInquiryStatus>('all')
+  const [showNewInquiryDialog, setShowNewInquiryDialog] = useState(false)
+  const [newInquiry, setNewInquiry] = useState({
     patientId: '',
+    category: 'general' as SupportInquiryCategory,
     subject: '',
+    description: '',
+    priority: 'medium' as 'low' | 'medium' | 'high'
+  })
 
-
+  const filteredInquiries = useMemo(() => {
     if (activeFilter === 'all') return inquiries || []
+    return (inquiries || []).filter(i => i.status === activeFilter)
   }, [inquiries, activeFilter])
+
   const sortedInquiries = useMemo(() => {
     return [...filteredInquiries].sort((a, b) => {
-  
-    })
-
-    if (!selectedInquiry) return []
-  }, [messages, selectedInquiry])
-  const stats = useMemo(() => ({
-  
-    resolved: (inquiries || []).filter(i => i.st
-
-    const patient = (patients || []).find(p => p.i
-  }
-  const getCategoryI
-      case 'technical': return <DesktopTower classN
-    
-
-
-    const variants = {
-      inProgress: 'bg-amber-600 text-white',
-      resolved: 'bg-green-600 t
-
-
-    const variants = {
-      medium: 'bg-slate-600 text-white',
-    }
+      const statusOrder = { new: 0, inProgress: 1, followUp: 2, resolved: 3 }
+      const statusDiff = statusOrder[a.status] - statusOrder[b.status]
       if (statusDiff !== 0) return statusDiff
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
@@ -208,7 +204,7 @@ import {
         <div>
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
-              <Headset className="w-10 h-10 text-primary" weight="duotone" />
+              <Headset className="w-10 h-10 text-purple-600" weight="duotone" />
               Administrative Support Portal
             </h1>
             <Dialog open={showNewInquiryDialog} onOpenChange={setShowNewInquiryDialog}>
@@ -254,258 +250,253 @@ import {
                           <SelectItem value="general">General</SelectItem>
                         </SelectContent>
                       </Select>
-        <div className="gr
+                    </div>
 
-              <Clock className="h-4 w-4 text-bl
-            <CardContent>
-              <p className="text-xs text-muted-foreground mt-1">Awaiting assignment</p>
-          </Card>
-          <Card className="hover:border-a
-              <CardTitle className="text
-            </CardHeader>
-              <div className="text-3xl font-bold">{stats.inProgres
-            </CardContent>
+                    <div className="space-y-2">
+                      <Label htmlFor="priority">Priority</Label>
+                      <Select value={newInquiry.priority} onValueChange={(v) => setNewInquiry(prev => ({ ...prev, priority: v as 'low' | 'medium' | 'high' }))}>
+                        <SelectTrigger id="priority">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-            <CardHeader className="flex 
-              <ChatCircle class
-            <CardContent>
-              <p classNa
+                  <div className="space-y-2">
+                    <Label htmlFor="subject">Subject</Label>
+                    <Input
+                      id="subject"
+                      value={newInquiry.subject}
+                      onChange={(e) => setNewInquiry(prev => ({ ...prev, subject: e.target.value }))}
+                      placeholder="Brief description of the issue"
+                    />
+                  </div>
 
-          <Card className="hover:border-green
-              <CardTitle className="text-sm font-medium">Res
-            </CardHeader>
-              <div className="text
-            </CardContent>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={newInquiry.description}
+                      onChange={(e) => setNewInquiry(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Detailed information about the inquiry"
+                      rows={4}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowNewInquiryDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateInquiry}>
+                    Create Inquiry
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <p className="text-muted-foreground">Non-clinical patient inquiries and administrative support</p>
         </div>
+
+        <div className="grid grid-cols-4 gap-4">
+          <Card className="hover:border-blue-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('new')}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">New Inquiries</CardTitle>
+              <Clock className="h-4 w-4 text-blue-600" weight="duotone" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.new}</div>
+              <p className="text-xs text-muted-foreground mt-1">Awaiting assignment</p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:border-amber-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('inProgress')}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+              <ChatCircle className="h-4 w-4 text-amber-600" weight="duotone" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.inProgress}</div>
+              <p className="text-xs text-muted-foreground mt-1">Active conversations</p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:border-purple-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('followUp')}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Follow-Up</CardTitle>
+              <Warning className="h-4 w-4 text-purple-600" weight="duotone" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.followUp}</div>
+              <p className="text-xs text-muted-foreground mt-1">Awaiting response</p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:border-green-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('resolved')}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Resolved</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-600" weight="duotone" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.resolved}</div>
+              <p className="text-xs text-muted-foreground mt-1">Completed</p>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-3 gap-6">
-            <CardHeade
-                {activeF
-
-            <CardContent className="p-0">
-                <div className="space-y-2 p-6 pt-0">
-                    <div clas
-                      <p className="te
-                  ) : (
-                      <div
-                        onClick={() => setSelectedInquiry(inquiry)}
-                          sele
-                      
-                      >
-
-                            <span className="font-semibold text-sm">{inquir
-                          {getPrio
-                        <p 
-                      
-                          {get
-                     
-                
-                    ))
-              
-
-
+          <Card className="col-span-1">
             <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Inquiries</CardTitle>
+                <Badge variant="outline">{filteredInquiries.length}</Badge>
+              </div>
+              {activeFilter !== 'all' && (
+                <Button variant="ghost" size="sm" onClick={() => setActiveFilter('all')}>
+                  Show All
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-2 p-6 pt-0">
+                  {sortedInquiries.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <ChatCircle className="w-12 h-12 text-muted-foreground mb-3" weight="duotone" />
+                      <p className="text-sm text-muted-foreground">No inquiries found</p>
+                    </div>
+                  ) : (
+                    sortedInquiries.map((inquiry) => (
+                      <div
+                        key={inquiry.id}
+                        onClick={() => setSelectedInquiry(inquiry)}
+                        className={`p-4 rounded-lg border cursor-pointer transition-all hover:border-primary ${
+                          selectedInquiry?.id === inquiry.id ? 'border-primary bg-accent/50' : 'bg-card'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            {getCategoryIcon(inquiry.category)}
+                            <span className="font-semibold text-sm">{inquiry.subject}</span>
+                          </div>
+                          {getPriorityBadge(inquiry.priority)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {getPatientName(inquiry.patientId)}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          {getStatusBadge(inquiry.status)}
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(inquiry.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
                 <div>
                   {selectedInquiry && (
-                      {getPatientName(selectedInquiry.patientId)} • {selec
+                    <CardTitle className="text-lg mb-1">
+                      {getPatientName(selectedInquiry.patientId)} • {selectedInquiry.subject}
+                    </CardTitle>
                   )}
-                {selected
-                    <Select value={selectedInquiry.status} onValueC
+                </div>
+                {selectedInquiry && (
+                  <div className="flex items-center gap-2">
+                    <Select value={selectedInquiry.status} onValueChange={(v) => handleUpdateStatus(selectedInquiry.id, v as SupportInquiryStatus)}>
+                      <SelectTrigger className="w-[180px]">
                         <SelectValue />
-                      <Sel
-                 
-
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="new">New</SelectItem>
+                        <SelectItem value="inProgress">In Progress</SelectItem>
+                        <SelectItem value="followUp">Follow-Up</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                      </SelectContent>
                     </Select>
+                  </div>
                 )}
+              </div>
             </CardHeader>
+            <CardContent>
               {!selectedInquiry ? (
-                  <ChatCi
+                <div className="flex flex-col items-center justify-center h-[600px] text-center">
+                  <ChatCircle className="w-16 h-16 text-muted-foreground mb-4" weight="duotone" />
+                  <p className="text-muted-foreground">Select an inquiry to view details</p>
                 </div>
+              ) : (
                 <div className="space-y-4">
+                  <div className="bg-muted/50 p-4 rounded-lg">
                     <p className="text-sm font-medium mb-1">Original Request</p>
+                    <p className="text-sm text-muted-foreground">{selectedInquiry.description}</p>
                   </div>
-                 
 
-                        <p className="text-sm text-muted-foreground text-center py-8">No messages yet</p>
-                        <div className="space-y-3">
-                            <div
-                              className={`p-3 rounded-lg ${
-                         
-                         
-                              <div className="flex items-center gap-2 mb
-                                <span className="text-xs font-medium">{msg.senderNam
-                          
-                 
+                  <ScrollArea className="h-[400px] border rounded-lg p-4">
+                    {inquiryMessages.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No messages yet</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {inquiryMessages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className={`p-3 rounded-lg ${
+                              msg.senderRole === 'staff' ? 'bg-primary/10 ml-8' : 'bg-muted mr-8'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-medium">{msg.senderName}</span>
+                              {msg.isInternal && <Badge variant="outline" className="text-xs">Internal</Badge>}
+                              <span className="text-xs text-muted-foreground ml-auto">
+                                {new Date(msg.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                            <p className="text-sm">{msg.body}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
 
-                              </p>
-                          ))}
-                      )}
-                  </div>
-                  <div cl
-                      <Te
-                        onChange={(e) => setMessageText(e.target.value)}
-                        rows={3}
-                      />
-                 
-              
-
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="Type your message..."
+                      value={messageText}
+                      onChange={(e) => setMessageText(e.target.value)}
+                      rows={3}
+                    />
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={isInternal}
+                          onChange={(e) => setIsInternal(e.target.checked)}
                           className="rounded"
-                        <span className
-                      <B
-                        S
+                        />
+                        <span className="text-muted-foreground">Internal note (not visible to patient)</span>
+                      </label>
+                      <Button onClick={handleSendMessage} disabled={!messageText.trim()}>
+                        <PaperPlaneTilt className="w-4 h-4 mr-2" />
+                        Send Message
+                      </Button>
                     </div>
+                  </div>
                 </div>
+              )}
             </CardContent>
+          </Card>
         </div>
+      </div>
     </div>
+  )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
