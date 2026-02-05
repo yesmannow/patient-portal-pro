@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Task, Patient, Case, Provider } from '@/lib/types'
 import { WorkflowEngine } from '@/lib/workflow-engine'
+import { useAuth } from '@/lib/auth-context'
 import { format, isPast, isToday, isTomorrow, isThisWeek } from 'date-fns'
-import { CheckSquare, Clock, Warning, User, FolderOpen } from '@phosphor-icons/react'
+import { CheckSquare, Clock, Warning, User, FolderOpen, Tag } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { TaskDetailDialog } from './TaskDetailDialog'
 
@@ -18,6 +19,7 @@ const statusColors = {
 }
 
 export function TaskBoard() {
+  const { currentUser } = useAuth()
   const [tasks, setTasks] = useKV<Task[]>('tasks', [])
   const [patients] = useKV<Patient[]>('patients', [])
   const [cases] = useKV<Case[]>('cases', [])
@@ -26,18 +28,30 @@ export function TaskBoard() {
   const [filterStatus, setFilterStatus] = useState<'all' | Task['status']>('all')
   const [filterPatient, setFilterPatient] = useState<string>('all')
 
-  const overdueTasks = WorkflowEngine.checkOverdueTasks(tasks || [])
+  const currentProvider = providers?.find(p => p.email === currentUser?.email)
 
-  const filteredTasks = (tasks || []).filter(task => {
+  const providerTasks = (tasks || []).filter(task => 
+    currentProvider ? task.assignedToProviderId === currentProvider.id : false
+  )
+
+  const overdueTasks = WorkflowEngine.checkOverdueTasks(providerTasks)
+
+  const filteredTasks = providerTasks.filter(task => {
     if (filterStatus !== 'all' && task.status !== filterStatus) return false
     if (filterPatient !== 'all' && task.patientId !== filterPatient) return false
     return true
   })
 
   const tasksByStatus = {
-    todo: filteredTasks.filter(t => t.status === 'todo'),
-    inProgress: filteredTasks.filter(t => t.status === 'inProgress'),
-    done: filteredTasks.filter(t => t.status === 'done'),
+    todo: filteredTasks.filter(t => t.status === 'todo').sort((a, b) => 
+      new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    ),
+    inProgress: filteredTasks.filter(t => t.status === 'inProgress').sort((a, b) => 
+      new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    ),
+    done: filteredTasks.filter(t => t.status === 'done').sort((a, b) => 
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    ),
   }
 
   const getPatientName = (patientId?: string) => {
@@ -46,9 +60,10 @@ export function TaskBoard() {
     return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'
   }
 
-  const getProviderName = (providerId: string) => {
-    const provider = providers?.find(p => p.id === providerId)
-    return provider?.name || 'Unknown Provider'
+  const getCaseSubject = (caseId?: string) => {
+    if (!caseId) return null
+    const linkedCase = cases?.find(c => c.id === caseId)
+    return linkedCase?.subject
   }
 
   const isOverdue = (task: Task) => {
@@ -74,20 +89,39 @@ export function TaskBoard() {
   }
 
   const taskCounts = {
-    total: tasks?.length || 0,
+    total: providerTasks.length,
     todo: tasksByStatus.todo.length,
     inProgress: tasksByStatus.inProgress.length,
     done: tasksByStatus.done.length,
     overdue: overdueTasks.length,
   }
 
+  if (!currentProvider) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Warning className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duotone" />
+            <p className="text-muted-foreground">Provider profile not found. Please contact administrator.</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Task Board</h1>
-          <p className="text-muted-foreground mt-1">Manage workflow tasks and assignments</p>
+          <h1 className="text-3xl font-bold tracking-tight">My Task Board</h1>
+          <p className="text-muted-foreground mt-1">Manage your assigned clinical workflow tasks</p>
         </div>
+        {overdueTasks.length > 0 && (
+          <Badge variant="destructive" className="flex items-center gap-1.5 px-3 py-1.5">
+            <Warning className="w-4 h-4" weight="fill" />
+            {overdueTasks.length} Overdue
+          </Badge>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-4">
@@ -186,7 +220,7 @@ export function TaskBoard() {
                   >
                     <Card
                       className={`cursor-pointer hover:shadow-md transition-all ${
-                        isOverdue(task) ? 'border-l-4 border-l-destructive' : ''
+                        isOverdue(task) ? 'border-l-4 border-l-destructive bg-red-50/30' : ''
                       }`}
                       onClick={() => setSelectedTask(task)}
                     >
@@ -195,7 +229,7 @@ export function TaskBoard() {
                           <div className="flex items-start justify-between gap-2">
                             <h4 className="font-semibold text-sm line-clamp-2">{task.title}</h4>
                             <Badge className={statusColors[task.status]} variant="outline">
-                              {status}
+                              {status === 'inProgress' ? 'In Progress' : status === 'todo' ? 'To Do' : 'Done'}
                             </Badge>
                           </div>
                           
@@ -203,14 +237,24 @@ export function TaskBoard() {
                             <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
                           )}
 
+                          {task.caseId && getCaseSubject(task.caseId) && (
+                            <div className="flex items-center gap-1 text-xs text-primary">
+                              <Tag className="w-3 h-3" />
+                              <span className="truncate">Case: {getCaseSubject(task.caseId)}</span>
+                            </div>
+                          )}
+
                           <div className="flex items-center gap-3 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <User className="w-3 h-3" />
                               <span className="truncate">{getPatientName(task.patientId)}</span>
                             </div>
-                            <div className={`flex items-center gap-1 ${isOverdue(task) ? 'text-red-600 font-bold' : ''}`}>
+                            <div className={`flex items-center gap-1 font-medium ${
+                              isOverdue(task) ? 'text-red-600 font-bold' : ''
+                            }`}>
                               <Clock className="w-3 h-3" />
                               <span>{getDueDateLabel(task.dueDate)}</span>
+                              {isOverdue(task) && <Warning className="w-3 h-3 ml-0.5" weight="fill" />}
                             </div>
                           </div>
 
