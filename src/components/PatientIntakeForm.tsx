@@ -6,9 +6,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { APIServices } from '@/lib/api-services'
-import { Patient } from '@/lib/types'
-import { CheckCircle, XCircle, Warning, User, Phone, Envelope, MapPin, Sparkle } from '@phosphor-icons/react'
+import { Patient, HousingStatus, TransportationAccess } from '@/lib/types'
+import { CheckCircle, XCircle, Warning, User, Phone, Envelope, MapPin, Sparkle, House, Car, Briefcase } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
 interface ValidationStatus {
@@ -28,6 +31,14 @@ export function PatientIntakeForm() {
     city: '',
     state: '',
     zipCode: '',
+    dateOfBirth: '',
+    mrn: '',
+    insuranceProvider: '',
+    insurancePolicyNumber: '',
+    housingStatus: '' as HousingStatus | '',
+    transportationAccess: '' as TransportationAccess | '',
+    employmentStatus: '',
+    preferredLanguage: '',
   })
   const [validation, setValidation] = useState<ValidationStatus>({})
   const [isValidating, setIsValidating] = useState(false)
@@ -177,6 +188,7 @@ export function PatientIntakeForm() {
 
     const newPatient: Patient = {
       id: `patient-${Date.now()}`,
+      mrn: formData.mrn || `MRN${Date.now()}`,
       firstName: formData.firstName,
       lastName: formData.lastName,
       email: formData.email,
@@ -188,7 +200,7 @@ export function PatientIntakeForm() {
          validation.phone.message.includes('VOIP') ? 'voip' : 'unknown') : undefined,
       phoneCarrier: validation.phone?.valid ? validation.phone.message.split(' - ')[1] : undefined,
       canReceiveSms: validation.phone?.canSms || false,
-      dateOfBirth: '1990-01-01',
+      dateOfBirth: formData.dateOfBirth || '1990-01-01',
       preferredContactMethod: validation.phone?.canSms ? 'sms' : 'email',
       conditionType: 'primaryCare',
       patientStatus: 'new',
@@ -196,6 +208,16 @@ export function PatientIntakeForm() {
       createdAt: new Date().toISOString(),
       hipaaFormCompleted: false,
       intakeFormCompleted: true,
+      address: `${formData.street}, ${formData.city}, ${formData.state} ${formData.zipCode}`,
+      insuranceStatus: formData.insuranceProvider ? 'active' : 'unknown',
+      insuranceProvider: formData.insuranceProvider || undefined,
+      insurancePolicyNumber: formData.insurancePolicyNumber || undefined,
+      sdoh: {
+        housingStatus: (formData.housingStatus as HousingStatus) || 'unknown',
+        transportationAccess: (formData.transportationAccess as TransportationAccess) || 'unknown',
+        employmentStatus: formData.employmentStatus || undefined,
+        preferredLanguage: formData.preferredLanguage || 'English',
+      },
     }
 
     setPatients(current => [...(current || []), newPatient])
@@ -210,6 +232,14 @@ export function PatientIntakeForm() {
       city: '',
       state: '',
       zipCode: '',
+      dateOfBirth: '',
+      mrn: '',
+      insuranceProvider: '',
+      insurancePolicyNumber: '',
+      housingStatus: '',
+      transportationAccess: '',
+      employmentStatus: '',
+      preferredLanguage: '',
     })
     setValidation({})
     setShowValidation(false)
@@ -248,28 +278,47 @@ export function PatientIntakeForm() {
           <CardDescription>All contact information is validated in real-time</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={e => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                  required
-                />
-              </div>
+          <Tabs defaultValue="demographics" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="demographics">Demographics</TabsTrigger>
+              <TabsTrigger value="insurance">Insurance & Admin</TabsTrigger>
+              <TabsTrigger value="sdoh">Social Determinants</TabsTrigger>
+            </TabsList>
 
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={e => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                  required
-                />
-              </div>
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <TabsContent value="demographics" className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={e => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={e => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={e => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                    required
+                  />
+                </div>
 
             <div className="space-y-2">
               <Label htmlFor="phone" className="flex items-center gap-2">
@@ -381,6 +430,126 @@ export function PatientIntakeForm() {
                 </Badge>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="insurance" className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="mrn">Medical Record Number (MRN)</Label>
+              <Input
+                id="mrn"
+                value={formData.mrn}
+                onChange={e => setFormData(prev => ({ ...prev, mrn: e.target.value }))}
+                placeholder="Auto-generated if left blank"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="insuranceProvider">Insurance Provider</Label>
+              <Input
+                id="insuranceProvider"
+                value={formData.insuranceProvider}
+                onChange={e => setFormData(prev => ({ ...prev, insuranceProvider: e.target.value }))}
+                placeholder="e.g., Blue Cross, Medicare"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="insurancePolicyNumber">Policy Number</Label>
+              <Input
+                id="insurancePolicyNumber"
+                value={formData.insurancePolicyNumber}
+                onChange={e => setFormData(prev => ({ ...prev, insurancePolicyNumber: e.target.value }))}
+                placeholder="Insurance policy/member ID"
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="sdoh" className="space-y-4">
+            <Alert>
+              <House className="w-4 h-4" weight="duotone" />
+              <AlertDescription>
+                Social determinants of health help us understand barriers to care and provide appropriate support.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <Label htmlFor="housingStatus" className="flex items-center gap-2">
+                <House className="w-4 h-4" weight="duotone" />
+                Housing Status
+              </Label>
+              <Select
+                value={formData.housingStatus}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, housingStatus: value as HousingStatus }))}
+              >
+                <SelectTrigger id="housingStatus">
+                  <SelectValue placeholder="Select housing status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="stable">Stable</SelectItem>
+                  <SelectItem value="unstable">Unstable</SelectItem>
+                  <SelectItem value="homeless">Homeless</SelectItem>
+                  <SelectItem value="assisted">Assisted Living</SelectItem>
+                  <SelectItem value="unknown">Prefer not to answer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="transportationAccess" className="flex items-center gap-2">
+                <Car className="w-4 h-4" weight="duotone" />
+                Transportation Access
+              </Label>
+              <Select
+                value={formData.transportationAccess}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, transportationAccess: value as TransportationAccess }))}
+              >
+                <SelectTrigger id="transportationAccess">
+                  <SelectValue placeholder="Select transportation access" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="own">Own Vehicle</SelectItem>
+                  <SelectItem value="public">Public Transportation</SelectItem>
+                  <SelectItem value="limited">Limited Access</SelectItem>
+                  <SelectItem value="none">No Access</SelectItem>
+                  <SelectItem value="unknown">Prefer not to answer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="employmentStatus" className="flex items-center gap-2">
+                <Briefcase className="w-4 h-4" weight="duotone" />
+                Employment Status
+              </Label>
+              <Select
+                value={formData.employmentStatus}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, employmentStatus: value }))}
+              >
+                <SelectTrigger id="employmentStatus">
+                  <SelectValue placeholder="Select employment status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="employed">Employed Full-Time</SelectItem>
+                  <SelectItem value="part-time">Employed Part-Time</SelectItem>
+                  <SelectItem value="unemployed">Unemployed</SelectItem>
+                  <SelectItem value="retired">Retired</SelectItem>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="disabled">Disabled</SelectItem>
+                  <SelectItem value="unknown">Prefer not to answer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="preferredLanguage">Preferred Language</Label>
+              <Input
+                id="preferredLanguage"
+                value={formData.preferredLanguage}
+                onChange={e => setFormData(prev => ({ ...prev, preferredLanguage: e.target.value }))}
+                placeholder="English"
+              />
+            </div>
+          </TabsContent>
 
             <div className="flex gap-3 pt-4">
               <Button type="submit" disabled={isValidating} className="flex-1">
@@ -399,6 +568,14 @@ export function PatientIntakeForm() {
                     city: '',
                     state: '',
                     zipCode: '',
+                    dateOfBirth: '',
+                    mrn: '',
+                    insuranceProvider: '',
+                    insurancePolicyNumber: '',
+                    housingStatus: '',
+                    transportationAccess: '',
+                    employmentStatus: '',
+                    preferredLanguage: '',
                   })
                   setValidation({})
                   setShowValidation(false)
@@ -408,6 +585,7 @@ export function PatientIntakeForm() {
               </Button>
             </div>
           </form>
+        </Tabs>
         </CardContent>
       </Card>
     </div>

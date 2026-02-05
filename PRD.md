@@ -1,6 +1,8 @@
 # Planning Guide
 
-A comprehensive medical practice portal with intelligent workflow automation, structured form handling, predictive analytics, and open-source integration capabilities for patient-provider communication and care coordination.
+A comprehensive medical practice portal with intelligent workflow automation, structured form handling, predictive analytics, clinical decision support, and real-time care gap detection for patient-provider communication and care coordination.
+
+**Latest Iteration (v2.0)**: Enhanced data architecture with comprehensive patient demographics (MRN, insurance, emergency contacts), clinical history tracking (problem lists, surgical history, medications, allergies), vitals trending with automated alerts, social determinants of health (SDOH) collection, proactive care gap detection, smart clinical templates, and waitlist automation.
 
 **Experience Qualities**:
 1. **Efficient** - Automated workflows reduce manual tracking, allowing providers to focus on care delivery rather than administrative tasks.
@@ -138,12 +140,47 @@ This platform includes role-based multi-view dashboards, workflow automation eng
 - **Progression**: Appointment within 72 hours → System sends SMS "Reply 1 to Confirm or 2 to Reschedule" → Patient replies "1" → Appointment status changes to "confirmed" → Front Desk schedule shows green badge → Staff knows patient is coming
 - **Success criteria**: SMS trigger fires at 72 hours; patient "1" response changes status to "confirmed"; schedule badge turns green; "2" response notifies staff for follow-up
 
+### Waitlist Backfill Automation
+- **Functionality**: When appointment cancelled within 24 hours, system automatically scans waitlist for patients wanting that provider and sends SMS notifications to fill the gap; first patient to respond "YES" claims the slot
+- **Purpose**: Maximizes provider utilization; reduces revenue loss from last-minute cancellations; improves patient access by filling slots from waitlist
+- **Trigger**: Appointment status changes to "cancelled" and appointment is within 24 hours
+- **Progression**: Patient cancels appointment → System detects cancellation <24 hours before visit → Scans waitlist for matching provider → Finds 3 waitlist patients → Sends SMS "Slot available on [date] at [time]. Reply YES to claim" → First patient replies YES → Slot reassigned → Other waitlist patients notified slot is filled
+- **Success criteria**: Cancellations within 24 hours trigger waitlist check; SMS sent to up to 3 waitlist patients; first "YES" response books appointment; other patients notified; slot filled within minutes
+
 ### VoIP Screen Pop Integration with Validated Phone Numbers
 - **Functionality**: When incoming call detected from patient phone number, system instantly displays full clinical profile popup including phone validation status (line type, carrier, SMS capability), upcoming appointments, outstanding labs, and account balance; phone number matching uses intelligent normalization to handle different formats
 - **Purpose**: Patient satisfaction through personalized greeting; staff efficiency by eliminating manual lookup; instant context for better service; validation status alerts staff if SMS confirmations will fail
 - **Trigger**: VoIP system detects incoming call; phone number matches patient record via normalized comparison
 - **Progression**: Incoming call detected → System normalizes phone number and matches to patient record → Screen pop displays patient profile with phone validation details (validated status, line type, carrier, SMS capability) → Displays upcoming appointments, outstanding lab results, and account balance → Alerts for unvalidated numbers → Staff greets patient by name with instant context → Call completes → Profile closes
 - **Success criteria**: Screen pop appears within 1 second of call detection; patient correctly matched by normalized phone number; phone validation metadata displayed (line type, carrier, SMS capable); warning shown for unvalidated numbers; all relevant data displayed (appointments, labs, balance); staff can immediately reference information
+
+### Enhanced Data Architecture & Clinical History
+- **Functionality**: Comprehensive patient records including MRN, emergency contacts, guarantor info, insurance details, structured problem lists with ICD-10 codes, surgical history, active medications, documented allergies with severity levels, and social determinants of health (housing, transportation, employment)
+- **Purpose**: Moves beyond basic demographics to capture complete clinical context; enables accurate billing, care coordination, and proactive risk assessment
+- **Trigger**: Front desk or clinical staff accesses patient intake form; nurse updates vitals; provider documents clinical findings
+- **Progression**: Staff opens enhanced intake form with tabs (Demographics, Insurance/Admin, SDOH) → Captures validated contact info → Records insurance status → Documents housing/transportation barriers → Saves comprehensive profile → Data available across all clinical workflows
+- **Success criteria**: All structured data persists correctly; problem list supports active/inactive statuses; allergies display with severity indicators; SDOH data informs care gap alerts
+
+### Vitals Dashboard with Trend Analysis
+- **Functionality**: Visual charting of blood pressure, BMI, heart rate, temperature, and oxygen saturation over time; automatic calculation of BMI from height/weight; color-coded status badges for abnormal readings; high-risk alerts for hypertension (BP ≥140/90), obesity (BMI ≥30), and hypoxia (O2 <95%)
+- **Purpose**: Enables nurses to quickly assess patient status; provides providers with trend data for chronic disease management; triggers automated alerts for dangerous vitals
+- **Trigger**: Nurse records vitals in rooming queue; provider views patient vitals dashboard
+- **Progression**: Nurse enters measurements → System calculates BMI → Checks vital thresholds → Displays high-risk badge if abnormal → Saves to patient record → Provider views trends on dashboard → Line charts show BP/BMI/HR over last 10 visits
+- **Success criteria**: Vitals persist with timestamps; BMI auto-calculates correctly; BP ≥140/90 triggers red "High Risk" badge; trend charts render with last 10 readings; abnormal values visually distinct
+
+### Clinical Decision Support & Care Gap Detection
+- **Functionality**: Automated scanning of patient data to detect preventive care gaps (colonoscopy for age 50+, A1C for diabetics >6 months overdue, vaccinations); displays urgent/warning/info alerts; shows all documented allergies across patient panel; proactive notifications for missing screenings
+- **Purpose**: Shifts from reactive to proactive care; prevents missed screenings that lead to late-stage diagnoses; reduces malpractice risk by flagging overdue tests
+- **Trigger**: System runs periodic care gap analysis; provider opens Clinical Decision Support dashboard; patient with diabetes hasn't had A1C in 7 months
+- **Progression**: Background job scans patient records → Detects age ≥50 with no colonoscopy record → Creates care gap alert → Displays on CDS dashboard with severity badge → Provider clicks alert → Sees patient details and recommended action → Orders screening or sends portal message
+- **Success criteria**: Care gaps accurately detect based on age + problem list; A1C gaps trigger for diabetic patients >6 months; colonoscopy gaps trigger for age 50+; allergy warnings display with severity color coding; zero false positives in gap detection
+
+### Smart Clinical Note Templates
+- **Functionality**: Reason-for-visit-aware note templates that auto-populate based on appointment type; orthopedic exam template for knee pain, diabetes follow-up template for A1C checks, annual wellness visit template for preventive care; providers can edit before saving
+- **Purpose**: Reduces documentation time by 60%; ensures consistent clinical documentation; improves billing accuracy by capturing all billable elements
+- **Trigger**: Provider opens case for patient with specific reason for visit; system detects keywords like "knee pain", "diabetes", "annual physical"
+- **Progression**: Provider views appointment → Clicks "Generate Note" → System matches reason ("knee pain") → Loads orthopedic exam template with HPI/Physical/Assessment sections → Provider fills in findings → Reviews and edits → Saves to patient chart
+- **Success criteria**: "Knee pain" loads orthopedic template; "diabetes" loads A1C follow-up template; "annual" loads wellness visit template; templates include specialty-specific exam sections; providers can override and customize
 
 ### Nurse Rooming Queue
 - **Functionality**: Displays today's confirmed appointments ready for vital sign collection; nurses can record BP, heart rate, temperature, weight, and height directly from queue

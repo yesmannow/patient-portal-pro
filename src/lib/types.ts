@@ -4,6 +4,10 @@ export type PreferredContactMethod = 'portal' | 'email' | 'sms' | 'voice'
 export type ConditionType = 'primaryCare' | 'physicalTherapy' | 'chronicCare' | 'postOp' | 'wellness'
 export type PatientStatus = 'new' | 'active' | 'dormant' | 'discharged'
 export type OnboardingSource = 'intakeForm' | 'referral' | 'phone' | 'website'
+export type InsuranceStatus = 'active' | 'inactive' | 'pending' | 'unknown'
+export type HousingStatus = 'stable' | 'unstable' | 'homeless' | 'assisted' | 'unknown'
+export type TransportationAccess = 'own' | 'public' | 'limited' | 'none' | 'unknown'
+export type ProblemStatus = 'active' | 'inactive' | 'resolved'
 
 export type ProviderRole = 'physician' | 'therapist' | 'nurse' | 'admin' | 'frontDesk' | 'billing' | 'doctor' | 'marketing'
 export type AvailabilityStatus = 'available' | 'busy' | 'away' | 'offline'
@@ -24,8 +28,71 @@ export interface User {
   avatarUrl?: string
 }
 
+export interface EmergencyContact {
+  name: string
+  relationship: string
+  phone: string
+  isPrimary?: boolean
+}
+
+export interface GuarantorInfo {
+  name: string
+  relationship: string
+  address: string
+  phone: string
+  email?: string
+}
+
+export interface ProblemListItem {
+  id: string
+  condition: string
+  icd10Code?: string
+  onsetDate: string
+  status: ProblemStatus
+  notes?: string
+}
+
+export interface SurgicalHistoryItem {
+  id: string
+  procedure: string
+  date: string
+  surgeon?: string
+  facility?: string
+  notes?: string
+}
+
+export interface Medication {
+  id: string
+  name: string
+  dosage: string
+  frequency: string
+  startDate: string
+  endDate?: string
+  prescribedBy?: string
+  active: boolean
+}
+
+export interface Allergy {
+  id: string
+  allergen: string
+  reaction: string
+  severity: 'mild' | 'moderate' | 'severe'
+  onsetDate?: string
+}
+
+export interface SocialDeterminants {
+  housingStatus: HousingStatus
+  transportationAccess: TransportationAccess
+  employmentStatus?: string
+  educationLevel?: string
+  foodInsecurity?: boolean
+  socialSupport?: string
+  preferredLanguage?: string
+}
+
 export interface Patient {
   id: string
+  mrn?: string
   firstName: string
   lastName: string
   dateOfBirth: string
@@ -42,6 +109,20 @@ export interface Patient {
   createdAt: string
   hipaaFormCompleted?: boolean
   intakeFormCompleted?: boolean
+  insuranceStatus?: InsuranceStatus
+  insuranceProvider?: string
+  insurancePolicyNumber?: string
+  emergencyContacts?: EmergencyContact[]
+  guarantor?: GuarantorInfo
+  problemList?: ProblemListItem[]
+  surgicalHistory?: SurgicalHistoryItem[]
+  medications?: Medication[]
+  allergies?: Allergy[]
+  sdoh?: SocialDeterminants
+  primaryCarePhysician?: string
+  address?: string
+  lastA1cDate?: string
+  lastColonoscopyDate?: string
 }
 
 export interface Provider {
@@ -285,7 +366,31 @@ export interface VitalSigns {
   temperature?: number
   weight?: number
   height?: number
+  bmi?: number
+  oxygenSat?: number
   recordedAt: string
   recordedBy: string
+}
+
+export interface CareGap {
+  id: string
+  patientId: string
+  gapType: 'colonoscopy' | 'a1c' | 'mammogram' | 'vaccination' | 'wellness_visit'
+  title: string
+  description: string
+  severity: 'info' | 'warning' | 'urgent'
+  detectedAt: string
+  resolvedAt?: string
+  actionTaken?: string
+}
+
+export interface WaitlistEntry {
+  id: string
+  patientId: string
+  providerId: string
+  preferredDates: string[]
+  reason: string
+  createdAt: string
+  notifiedAt?: string
 }
 

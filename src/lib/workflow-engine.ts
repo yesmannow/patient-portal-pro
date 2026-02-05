@@ -1,4 +1,4 @@
-import { WorkflowTemplate, Task, WorkflowEventType, Case, FormSubmission, Appointment, Patient, Payment } from './types'
+import { WorkflowTemplate, Task, WorkflowEventType, Case, FormSubmission, Appointment, Patient, Payment, CareGap, WaitlistEntry, VitalSigns, ProblemListItem } from './types'
 
 export class WorkflowEngine {
   static async processEvent(
@@ -215,6 +215,206 @@ export class WorkflowEngine {
     }
     
     return uniqueTasks
+  }
+
+  static async checkCareGaps(
+    patients: Patient[]
+  ): Promise<CareGap[]> {
+    const careGaps: CareGap[] = []
+    const now = new Date()
+
+    for (const patient of patients) {
+      const age = patient.dateOfBirth 
+        ? Math.floor((now.getTime() - new Date(patient.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 365))
+        : 0
+
+      if (age >= 50 && !patient.lastColonoscopyDate) {
+        careGaps.push({
+          id: `gap-colonoscopy-${patient.id}`,
+          patientId: patient.id,
+          gapType: 'colonoscopy',
+          title: 'Colonoscopy Screening Overdue',
+          description: 'Patient is 50+ years old and has no record of colonoscopy screening.',
+          severity: 'warning',
+          detectedAt: now.toISOString(),
+        })
+      }
+
+      const hasDiabetes = patient.problemList?.some(
+        problem => problem.status === 'active' && 
+        (problem.condition.toLowerCase().includes('diabetes') || problem.icd10Code?.startsWith('E11'))
+      )
+
+      if (hasDiabetes) {
+        const lastA1c = patient.lastA1cDate ? new Date(patient.lastA1cDate) : null
+        const monthsSinceA1c = lastA1c 
+          ? (now.getTime() - lastA1c.getTime()) / (1000 * 60 * 60 * 24 * 30)
+          : 999
+
+        if (monthsSinceA1c > 6) {
+          careGaps.push({
+            id: `gap-a1c-${patient.id}`,
+            patientId: patient.id,
+            gapType: 'a1c',
+            title: 'A1C Test Overdue',
+            description: `Patient with diabetes has not had A1C test in ${Math.floor(monthsSinceA1c)} months (recommended every 3-6 months).`,
+            severity: 'urgent',
+            detectedAt: now.toISOString(),
+          })
+        }
+      }
+    }
+
+    return careGaps
+  }
+
+  static async checkVitalAlerts(
+    vitals: VitalSigns
+  ): Promise<{ type: string; severity: 'info' | 'warning' | 'urgent'; message: string } | null> {
+    if (vitals.bloodPressureSystolic && vitals.bloodPressureDiastolic) {
+      if (vitals.bloodPressureSystolic >= 140 || vitals.bloodPressureDiastolic >= 90) {
+        return {
+          type: 'hypertension',
+          severity: 'urgent',
+          message: `High Blood Pressure: ${vitals.bloodPressureSystolic}/${vitals.bloodPressureDiastolic} mmHg`
+        }
+      }
+    }
+
+    if (vitals.bmi && vitals.bmi >= 30) {
+      return {
+        type: 'obesity',
+        severity: 'warning',
+        message: `BMI ${vitals.bmi.toFixed(1)} indicates obesity (≥30)`
+      }
+    }
+
+    if (vitals.oxygenSat && vitals.oxygenSat < 95) {
+      return {
+        type: 'hypoxia',
+        severity: 'urgent',
+        message: `Low Oxygen Saturation: ${vitals.oxygenSat}%`
+      }
+    }
+
+    return null
+  }
+
+  static async processWaitlistBackfill(
+    cancelledAppointment: Appointment,
+    waitlist: WaitlistEntry[],
+    patients: Patient[]
+  ): Promise<{ patientId: string; patientName: string; phone: string; message: string }[]> {
+    const now = new Date()
+    const appointmentTime = new Date(cancelledAppointment.dateTime)
+    const hoursUntilAppointment = (appointmentTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+    if (hoursUntilAppointment > 24) {
+      const matchingWaitlistEntries = waitlist.filter(
+        w => w.providerId === cancelledAppointment.providerId && !w.notifiedAt
+      )
+
+      const notifications: { patientId: string; patientName: string; phone: string; message: string }[] = []
+
+      for (const entry of matchingWaitlistEntries.slice(0, 3)) {
+        const patient = patients.find(p => p.id === entry.patientId)
+        if (patient && patient.canReceiveSms) {
+          notifications.push({
+            patientId: patient.id,
+            patientName: `${patient.firstName} ${patient.lastName}`,
+            phone: patient.phone,
+            message: `Hi ${patient.firstName}, a ${appointmentTime.toLocaleDateString()} appointment slot just opened up. Reply YES to claim it.`
+          })
+        }
+      }
+
+      return notifications
+    }
+
+    return []
+  }
+
+  static generateSmartTemplate(reasonForVisit: string): string | null {
+    const reason = reasonForVisit.toLowerCase()
+
+    if (reason.includes('knee') || reason.includes('joint')) {
+      return `ORTHOPEDIC EXAM TEMPLATE
+
+Chief Complaint: ${reasonForVisit}
+
+History of Present Illness:
+- Onset:
+- Duration:
+- Aggravating factors:
+- Relieving factors:
+- Pain scale (1-10):
+
+Physical Examination:
+- Inspection: 
+- Palpation:
+- Range of Motion:
+- Special Tests:
+
+Assessment & Plan:
+- Diagnosis:
+- Treatment:
+- Follow-up:`
+    }
+
+    if (reason.includes('diabetes') || reason.includes('a1c') || reason.includes('blood sugar')) {
+      return `DIABETES FOLLOW-UP TEMPLATE
+
+Chief Complaint: ${reasonForVisit}
+
+Interval History:
+- Recent blood glucose readings:
+- Medication adherence:
+- Dietary compliance:
+- Exercise routine:
+- Hypoglycemic episodes:
+
+Physical Examination:
+- Foot exam:
+- Weight:
+- Blood pressure:
+
+Labs Reviewed:
+- A1C: 
+- Lipid panel:
+
+Assessment & Plan:
+- Current glycemic control:
+- Medication adjustments:
+- Referrals needed:
+- Next A1C due:`
+    }
+
+    if (reason.includes('annual') || reason.includes('physical') || reason.includes('checkup')) {
+      return `ANNUAL WELLNESS VISIT TEMPLATE
+
+Chief Complaint: ${reasonForVisit}
+
+Preventive Screenings:
+- Cancer screenings (mammogram, colonoscopy, PSA):
+- Vaccinations status:
+- Labs reviewed:
+
+Chronic Conditions Review:
+- Active problems:
+- Medication reconciliation:
+
+Health Maintenance:
+- Diet & nutrition:
+- Exercise:
+- Substance use:
+
+Assessment & Plan:
+- Screenings ordered:
+- Referrals:
+- Follow-up in:`
+    }
+
+    return null
   }
 }
 
