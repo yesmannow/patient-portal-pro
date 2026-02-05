@@ -53,12 +53,12 @@ export function PatientDashboard() {
   const [newCaseOpen, setNewCaseOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
 
-  const currentPatient = patients.find((p) => p.email === currentUser?.email);
-  const myCases = cases
+  const currentPatient = patients?.find((p) => p.email === currentUser?.email);
+  const myCases = (cases || [])
     .filter((c) => c.patientId === currentPatient?.id)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const activeCases = myCases.filter((c) => c.status !== 'resolved');
-  const myAppointments = appointments
+  const myAppointments = (appointments || [])
     .filter((a) => a.patientId === currentPatient?.id && a.status === 'scheduled')
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
