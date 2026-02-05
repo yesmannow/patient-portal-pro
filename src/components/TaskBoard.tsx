@@ -11,6 +11,7 @@ import { format, isPast, isToday, isTomorrow, isThisWeek } from 'date-fns'
 import { CheckSquare, Clock, Warning, User, FolderOpen, Tag } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
 import { TaskDetailDialog } from './TaskDetailDialog'
+import { toast } from 'sonner'
 
 const statusColors = {
   todo: 'bg-slate-100 text-slate-700 border-slate-300',
@@ -27,6 +28,8 @@ export function TaskBoard() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | Task['status']>('all')
   const [filterPatient, setFilterPatient] = useState<string>('all')
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
+  const [dragOverColumn, setDragOverColumn] = useState<Task['status'] | null>(null)
 
   const currentProvider = providers?.find(p => p.email === currentUser?.email)
 
@@ -86,6 +89,60 @@ export function TaskBoard() {
           : task
       )
     )
+  }
+
+  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    setDraggedTaskId(taskId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', taskId)
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.cursor = 'grabbing'
+    }
+  }
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDraggedTaskId(null)
+    setDragOverColumn(null)
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.cursor = 'grab'
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent, status: Task['status']) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverColumn(status)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null)
+  }
+
+  const handleDrop = (e: React.DragEvent, newStatus: Task['status']) => {
+    e.preventDefault()
+    const taskId = e.dataTransfer.getData('text/plain')
+    
+    if (taskId && draggedTaskId) {
+      const task = tasks?.find(t => t.id === taskId)
+      const oldStatus = task?.status
+      
+      if (oldStatus && oldStatus !== newStatus) {
+        updateTaskStatus(taskId, newStatus)
+        
+        const statusLabels = {
+          todo: 'To Do',
+          inProgress: 'In Progress',
+          done: 'Done'
+        }
+        
+        toast.success(`Task moved to ${statusLabels[newStatus]}`, {
+          description: task?.title
+        })
+      }
+    }
+    
+    setDraggedTaskId(null)
+    setDragOverColumn(null)
   }
 
   const taskCounts = {
@@ -196,7 +253,15 @@ export function TaskBoard() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {(['todo', 'inProgress', 'done'] as const).map(status => (
-          <Card key={status}>
+          <Card 
+            key={status}
+            onDragOver={(e) => handleDragOver(e, status)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, status)}
+            className={`transition-colors ${
+              dragOverColumn === status ? 'ring-2 ring-primary ring-offset-2 bg-accent/10' : ''
+            }`}
+          >
             <CardHeader>
               <CardTitle className="capitalize flex items-center gap-2">
                 {status === 'todo' && <FolderOpen className="w-5 h-5" />}
@@ -206,91 +271,102 @@ export function TaskBoard() {
               </CardTitle>
               <CardDescription>{tasksByStatus[status].length} tasks</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 min-h-[200px]">
               {tasksByStatus[status].length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
-                  No {status === 'todo' ? 'pending' : status === 'inProgress' ? 'active' : 'completed'} tasks
+                  {dragOverColumn === status ? (
+                    <span className="text-primary font-medium">Drop task here</span>
+                  ) : (
+                    <>No {status === 'todo' ? 'pending' : status === 'inProgress' ? 'active' : 'completed'} tasks</>
+                  )}
                 </div>
               ) : (
                 tasksByStatus[status].map(task => (
-                  <motion.div
+                  <div
                     key={task.id}
-                    whileHover={{ scale: 1.01 }}
-                    transition={{ duration: 0.15 }}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task.id)}
+                    onDragEnd={handleDragEnd}
+                    className={draggedTaskId === task.id ? 'opacity-50' : ''}
                   >
-                    <Card
-                      className={`cursor-pointer hover:shadow-md transition-all ${
-                        isOverdue(task) ? 'border-l-4 border-l-destructive bg-red-50/30' : ''
-                      }`}
-                      onClick={() => setSelectedTask(task)}
+                    <motion.div
+                      whileHover={{ scale: 1.01 }}
+                      transition={{ duration: 0.15 }}
                     >
-                      <CardContent className="p-4">
-                        <div className="space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-semibold text-sm line-clamp-2">{task.title}</h4>
-                            <Badge className={statusColors[task.status]} variant="outline">
-                              {status === 'inProgress' ? 'In Progress' : status === 'todo' ? 'To Do' : 'Done'}
-                            </Badge>
-                          </div>
+                      <Card
+                        className={`cursor-move hover:shadow-md transition-all ${
+                          isOverdue(task) ? 'border-l-4 border-l-destructive bg-red-50/30' : ''
+                        }`}
+                        onClick={() => setSelectedTask(task)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-semibold text-sm line-clamp-2">{task.title}</h4>
+                              <Badge className={statusColors[task.status]} variant="outline">
+                                {status === 'inProgress' ? 'In Progress' : status === 'todo' ? 'To Do' : 'Done'}
+                              </Badge>
+                            </div>
                           
-                          {task.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
-                          )}
+                            {task.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
+                            )}
 
-                          {task.caseId && getCaseSubject(task.caseId) && (
-                            <div className="flex items-center gap-1 text-xs text-primary">
-                              <Tag className="w-3 h-3" />
-                              <span className="truncate">Case: {getCaseSubject(task.caseId)}</span>
-                            </div>
-                          )}
+                            {task.caseId && getCaseSubject(task.caseId) && (
+                              <div className="flex items-center gap-1 text-xs text-primary">
+                                <Tag className="w-3 h-3" />
+                                <span className="truncate">Case: {getCaseSubject(task.caseId)}</span>
+                              </div>
+                            )}
 
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              <span className="truncate">{getPatientName(task.patientId)}</span>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                <span className="truncate">{getPatientName(task.patientId)}</span>
+                              </div>
+                              <div className={`flex items-center gap-1 font-medium ${
+                                isOverdue(task) ? 'text-red-600 font-bold' : ''
+                              }`}>
+                                <Clock className="w-3 h-3" />
+                                <span>{getDueDateLabel(task.dueDate)}</span>
+                                {isOverdue(task) && <Warning className="w-3 h-3 ml-0.5" weight="fill" />}
+                              </div>
                             </div>
-                            <div className={`flex items-center gap-1 font-medium ${
-                              isOverdue(task) ? 'text-red-600 font-bold' : ''
-                            }`}>
-                              <Clock className="w-3 h-3" />
-                              <span>{getDueDateLabel(task.dueDate)}</span>
-                              {isOverdue(task) && <Warning className="w-3 h-3 ml-0.5" weight="fill" />}
-                            </div>
+
+                            {status !== 'done' && (
+                              <div className="flex gap-2 mt-3">
+                                {status === 'todo' && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      updateTaskStatus(task.id, 'inProgress')
+                                    }}
+                                  >
+                                    Start
+                                  </Button>
+                                )}
+                                {status === 'inProgress' && (
+                                  <Button
+                                    size="sm"
+                                    className="flex-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      updateTaskStatus(task.id, 'done')
+                                    }}
+                                  >
+                                    Complete
+                                  </Button>
+                                )}
+                              </div>
+                            )}
                           </div>
-
-                          {status !== 'done' && (
-                            <div className="flex gap-2 mt-3">
-                              {status === 'todo' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="flex-1"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    updateTaskStatus(task.id, 'inProgress')
-                                  }}
-                                >
-                                  Start
-                                </Button>
-                              )}
-                              {status === 'inProgress' && (
-                                <Button
-                                  size="sm"
-                                  className="flex-1"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    updateTaskStatus(task.id, 'done')
-                                  }}
-                                >
-                                  Complete
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </div>
                 ))
               )}
             </CardContent>
