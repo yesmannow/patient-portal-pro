@@ -224,5 +224,5 @@ export function PatientDashboard() {
         </>
       )}
     </div>
-}
+  )
 }
