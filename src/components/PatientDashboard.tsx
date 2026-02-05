@@ -1,69 +1,69 @@
 import { useState } from 'react'
-import { Card, CardContent, CardDescription
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
-import { Badge } from '@/components/ui/badge'
+import { useKV } from '@github/spark/hooks'
 import { Case, Appointment, Patient } from '@/lib/types'
-import { useAuth } from '@/lib/auth-context'
 import { CalendarBlank, ChatCircle, Plus, Clock, CheckCircle } from '@phosphor-icons/react'
-  'awaitingProvider': 'bg-purple-500 text-white
+import { format } from 'date-fns'
+import { motion } from 'framer-motion'
+import { NewCaseDialog } from './NewCaseDialog'
+import { CaseDetailDialog } from './CaseDetailDialog'
+
+const statusColors = {
+  'open': 'bg-blue-500 text-white',
+  'awaitingPatient': 'bg-amber-500 text-white',
+  'awaitingProvider': 'bg-purple-500 text-white',
+  'resolved': 'bg-green-600 text-white'
 }
+
 const statusLabels = {
-  'awaitingPatient': 'Awaiting Patient
-
-
-  urgent: 'border-l-red-600',
-  routine: 'border-l-blue-500',
-
-  urgent: 'Urgent',
+  'open': 'Open',
+  'awaitingPatient': 'Awaiting Patient',
+  'awaitingProvider': 'Awaiting Provider',
+  'resolved': 'Resolved'
 }
 
-const statusLabels = {
-  billing: 'Billi
-  admin: 'Administrative',
-
-  const { currentUser } =
- 
-
-
+const urgencyColors = {
   urgent: 'border-l-red-600',
-  const myAppointments = (appointments
+  timeSensitive: 'border-l-amber-500',
   routine: 'border-l-blue-500',
- 
+}
 
-      <div className="f
+const urgencyLabels = {
   urgent: 'Urgent',
-          </h1>
-        </div>
- 
+  timeSensitive: 'Time Sensitive',
+  routine: 'Routine',
+}
 
-
-        <Card>
-            <CardTitle c
-          </CardHeade
-            <div className="text-2xl f
+const caseTypeLabels = {
+  question: 'Question',
+  followUp: 'Follow-up',
+  billing: 'Billing',
+  clinicalConcern: 'Clinical Concern',
   admin: 'Administrative',
- 
+}
 
-          <CardHeader className="fle
-            <CalendarBlank classNam
-          <CardContent>
-            <p className="text-xs text-muted-foreground mt-1">
-            </p>
-        </Card>
-        <Card>
+export function PatientDashboard() {
+  const { currentUser } = useAuth()
+  const [patients] = useKV<Patient[]>('patients', [])
+  const [cases] = useKV<Case[]>('cases', [])
+  const [appointments] = useKV<Appointment[]>('appointments', [])
+  const [newCaseOpen, setNewCaseOpen] = useState(false)
+  const [selectedCase, setSelectedCase] = useState<Case | null>(null)
 
-          </CardHeader>
+  const currentPatient = patients?.find(p => p.email === currentUser?.email)
+  const myCases = (cases || []).filter(c => c.patientId === currentPatient?.id).sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
+  const activeCases = myCases.filter(c => c.status !== 'resolved')
+  const myAppointments = (appointments || [])
+    .filter(a => a.patientId === currentPatient?.id && a.status === 'scheduled')
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
 
-          </CardContent>
-      </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-          <CardHeader>
-
-          <CardContent className="space-y-3">
-
-          
-                  Create your f
+  return (
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
@@ -130,21 +130,23 @@ const statusLabels = {
                 <Button variant="link" onClick={() => setNewCaseOpen(true)} className="mt-2" disabled={!currentPatient}>
                   Create your first case
                 </Button>
-
+              </div>
             ) : (
               myCases.slice(0, 5).map((caseItem) => (
                 <motion.div
-
+                  key={caseItem.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
                   whileHover={{ scale: 1.01 }}
-
+                  transition={{ duration: 0.2 }}
                 >
                   <Card 
                     className={`cursor-pointer border-l-4 ${urgencyColors[caseItem.urgency]} hover:border-primary/30 hover:shadow-md transition-all`}
-
+                    onClick={() => setSelectedCase(caseItem)}
                   >
                     <CardContent className="p-5">
                       <div className="flex items-start justify-between gap-4">
-
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <Badge variant="outline" className="text-xs">
                               {caseTypeLabels[caseItem.caseType]}
@@ -156,29 +158,29 @@ const statusLabels = {
                           <h3 className="font-semibold truncate">{caseItem.subject}</h3>
                           <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                             {caseItem.description}
-
+                          </p>
                           <p className="text-xs text-muted-foreground mt-2">
                             {format(new Date(caseItem.createdAt), 'MMM d, yyyy')}
                           </p>
-
+                        </div>
                         <Badge className={statusColors[caseItem.status]}>
                           {caseItem.status === 'resolved' && <CheckCircle className="w-3 h-3 mr-1" weight="fill" />}
                           {statusLabels[caseItem.status]}
-
+                        </Badge>
                       </div>
                     </CardContent>
                   </Card>
                 </motion.div>
               ))
-
+            )}
           </CardContent>
+        </Card>
 
-
-
+        <Card>
           <CardHeader>
             <CardTitle>Upcoming Appointments</CardTitle>
             <CardDescription>Your scheduled sessions</CardDescription>
-
+          </CardHeader>
           <CardContent className="space-y-3">
             {myAppointments.length === 0 ? (
               <div className="text-center py-12">
@@ -186,43 +188,42 @@ const statusLabels = {
                 <p className="text-muted-foreground">No upcoming appointments</p>
               </div>
             ) : (
-
+              myAppointments.map((appointment) => (
                 <Card key={appointment.id} className="hover:border-primary/30 transition-colors">
-
+                  <CardContent className="p-5">
                     <div className="flex items-start justify-between gap-4">
-
+                      <div>
                         <div className="flex items-center gap-2">
                           <CalendarBlank className="w-4 h-4 text-primary" weight="duotone" />
                           <p className="font-semibold">
                             {format(new Date(appointment.dateTime), 'EEEE, MMMM d')}
                           </p>
-
+                        </div>
                         <p className="text-sm text-muted-foreground mt-1">
                           {format(new Date(appointment.dateTime), 'h:mm a')} • {appointment.location}
                         </p>
-
                       </div>
                     </div>
                   </CardContent>
-
+                </Card>
               ))
-
+            )}
           </CardContent>
         </Card>
       </div>
 
       {currentPatient && (
-
+        <>
           <NewCaseDialog open={newCaseOpen} onOpenChange={setNewCaseOpen} patientId={currentPatient.id} />
-
+          {selectedCase && (
             <CaseDetailDialog 
-
+              case={selectedCase}
               open={!!selectedCase} 
               onOpenChange={(open) => !open && setSelectedCase(null)} 
             />
-
+          )}
         </>
-
+      )}
     </div>
-
+  )
 }
