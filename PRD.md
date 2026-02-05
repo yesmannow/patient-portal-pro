@@ -129,20 +129,20 @@ Animations should emphasize test execution and validation feedback. Test result 
   - Calendar - For appointment date selection
   - Separator - To divide test sections clearly
   - ScrollArea - For long patient/authorization lists
-  
-- **Customizations**:
+  - Enhanced Alert variants for test results (success=green, error=red)
+  - Custom Card with colored left border indicating authorization status
   - Custom Badge variants for authorization status (active=green, expired=red, denied=red, pending=yellow)
   - Enhanced Alert variants for test results (success=green, error=red)
   - Custom Card with colored left border indicating authorization status
   - Progress bar with color coding for unit levels (high=green, medium=yellow, low=red)
-  
-- **States**:
+  - Cards: Hover elevation on selectable items, selected state with border highlight
+  - Badges: Solid background for status indicators, subtle pulse for active states
   - Buttons: Clear hover states, disabled when validation fails, loading state during test execution
   - Cards: Hover elevation on selectable items, selected state with border highlight
   - Badges: Solid background for status indicators, subtle pulse for active states
   - Alerts: Distinct colors and icons for different severities
-  
-- **Icon Selection**:
+  - CheckCircle, XCircle (pass/fail indicators)
+  - Warning, WarningCircle (caution states)
   - TestTube, Flask (testing icons)
   - CheckCircle, XCircle (pass/fail indicators)
   - Warning, WarningCircle (caution states)
@@ -152,16 +152,9 @@ Animations should emphasize test execution and validation feedback. Test result 
   - ClipboardText (requirements)
   - Activity (unit tracking)
   - Clock (expiration)
-  
-- **Spacing**:
-  - Cards: p-6 padding for content breathing room
-  - Test sections: gap-6 between test scenarios
-  - Result panels: p-5 with mb-4 to ensure visibility
-  - List items: space-y-3 between items
-  
-- **Mobile**:
   - Stack patient and authorization cards vertically
   - Full-screen Dialog for appointment booking
   - Simplified Table view with essential columns only
-  - Test results become scrollable cards instead of table
-  - Collapsible sections for authorization details
+  - Test sections: gap-6 between test scenarios
+  - Result panels: p-5 with mb-4 to ensure visibility
+  - List items: space-y-3 between items  - Stack patient and authorization cards vertically  - Full-screen Dialog for appointment booking  - Test results become scrollable cards instead of table  - Collapsible sections for authorization details
