@@ -143,9 +143,78 @@ export function PatientDashboard() {
                     onClick={() => setSelectedCase(caseItem)}
                   >
                     <CardContent className="p-5">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between g
                           <div className="flex items-center gap-2 mb-1">
+                              {caseTypeLabels[caseItem.caseType]}
+                            <Badge v
+                            </Badge>
+                          <p className="text-sm font-medium lin
+                          </p>
+                            {for
+                        </div>
+                          {caseItem.status === 'resolved' && <CheckCircle classNa
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Appointments</CardTitle>
+            <CardDescription>Your scheduled sessions</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {myAppointments.length === 0 ? (
+              <div className="text-center py-12">
+                <CalendarBlank className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duotone" />
+                <p className="text-muted-foreground">No upcoming appointments</p>
+              </div>
+            ) : (
+              myAppointments.slice(0, 5).map((appointment) => (
+                <Card key={appointment.id} className="hover:border-primary/30 transition-colors">
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <CalendarBlank className="w-4 h-4 text-primary" weight="duotone" />
+                          <p className="font-semibold">
+                            {format(new Date(appointment.dateTime), 'EEEE, MMMM d')}
+                          </p>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {format(new Date(appointment.dateTime), 'h:mm a')} • {appointment.location}
+                        </p>
+                        <p className="text-sm mt-2">{appointment.reason}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {currentPatient && (
+        <>
+          <NewCaseDialog open={newCaseOpen} onOpenChange={setNewCaseOpen} patientId={currentPatient.id} />
+          {selectedCase && (
+            <CaseDetailDialog
+              case={selectedCase}
+              open={!!selectedCase}
+              onOpenChange={(open) => !open && setSelectedCase(null)}
+            />
+          )}
+        </>
+      )}
+    </div>
+  );
+}
                             <Badge variant="outline" className="text-xs">
                               {caseTypeLabels[caseItem.caseType]}
                             </Badge>
@@ -225,3 +294,11 @@ export function PatientDashboard() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
