@@ -31,6 +31,10 @@ export interface Patient {
   dateOfBirth: string
   email: string
   phone: string
+  phoneValidated?: boolean
+  phoneLineType?: 'mobile' | 'landline' | 'voip' | 'unknown'
+  phoneCarrier?: string
+  canReceiveSms?: boolean
   preferredContactMethod: PreferredContactMethod
   conditionType: ConditionType
   patientStatus: PatientStatus

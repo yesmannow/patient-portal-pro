@@ -138,12 +138,12 @@ This platform includes role-based multi-view dashboards, workflow automation eng
 - **Progression**: Appointment within 72 hours → System sends SMS "Reply 1 to Confirm or 2 to Reschedule" → Patient replies "1" → Appointment status changes to "confirmed" → Front Desk schedule shows green badge → Staff knows patient is coming
 - **Success criteria**: SMS trigger fires at 72 hours; patient "1" response changes status to "confirmed"; schedule badge turns green; "2" response notifies staff for follow-up
 
-### VoIP Screen Pop Integration
-- **Functionality**: When incoming call detected from patient phone number, system instantly displays full clinical profile popup including upcoming appointments, outstanding labs, and account balance
-- **Purpose**: Patient satisfaction through personalized greeting; staff efficiency by eliminating manual lookup; instant context for better service
-- **Trigger**: VoIP system detects incoming call; phone number matches patient record
-- **Progression**: Incoming call detected → System matches phone number to patient → Screen pop displays patient profile, upcoming appointments, outstanding lab results, and account balance → Staff greets patient by name with instant context → Call completes → Profile closes
-- **Success criteria**: Screen pop appears within 1 second of call detection; patient correctly matched by phone; all relevant data displayed (appointments, labs, balance); staff can immediately reference information
+### VoIP Screen Pop Integration with Validated Phone Numbers
+- **Functionality**: When incoming call detected from patient phone number, system instantly displays full clinical profile popup including phone validation status (line type, carrier, SMS capability), upcoming appointments, outstanding labs, and account balance; phone number matching uses intelligent normalization to handle different formats
+- **Purpose**: Patient satisfaction through personalized greeting; staff efficiency by eliminating manual lookup; instant context for better service; validation status alerts staff if SMS confirmations will fail
+- **Trigger**: VoIP system detects incoming call; phone number matches patient record via normalized comparison
+- **Progression**: Incoming call detected → System normalizes phone number and matches to patient record → Screen pop displays patient profile with phone validation details (validated status, line type, carrier, SMS capability) → Displays upcoming appointments, outstanding lab results, and account balance → Alerts for unvalidated numbers → Staff greets patient by name with instant context → Call completes → Profile closes
+- **Success criteria**: Screen pop appears within 1 second of call detection; patient correctly matched by normalized phone number; phone validation metadata displayed (line type, carrier, SMS capable); warning shown for unvalidated numbers; all relevant data displayed (appointments, labs, balance); staff can immediately reference information
 
 ### Nurse Rooming Queue
 - **Functionality**: Displays today's confirmed appointments ready for vital sign collection; nurses can record BP, heart rate, temperature, weight, and height directly from queue

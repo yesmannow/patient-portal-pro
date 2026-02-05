@@ -181,6 +181,13 @@ export function PatientIntakeForm() {
       lastName: formData.lastName,
       email: formData.email,
       phone: formData.phone,
+      phoneValidated: validation.phone?.valid || false,
+      phoneLineType: validation.phone?.valid ? 
+        (validation.phone.message.includes('MOBILE') ? 'mobile' : 
+         validation.phone.message.includes('LANDLINE') ? 'landline' : 
+         validation.phone.message.includes('VOIP') ? 'voip' : 'unknown') : undefined,
+      phoneCarrier: validation.phone?.valid ? validation.phone.message.split(' - ')[1] : undefined,
+      canReceiveSms: validation.phone?.canSms || false,
       dateOfBirth: '1990-01-01',
       preferredContactMethod: validation.phone?.canSms ? 'sms' : 'email',
       conditionType: 'primaryCare',

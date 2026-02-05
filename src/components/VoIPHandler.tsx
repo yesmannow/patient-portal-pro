@@ -4,9 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Phone, X, User, Calendar, Flask, CreditCard, FileText } from '@phosphor-icons/react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Phone, X, User, Calendar, Flask, CreditCard, FileText, CheckCircle, Warning, Sparkle } from '@phosphor-icons/react'
 import { VoIPCall, Patient, Appointment, LabResult, PaymentCharge } from '@/lib/types'
 import { format } from 'date-fns'
+
+const normalizePhone = (phone: string): string => {
+  return phone.replace(/\D/g, '').slice(-10)
+}
 
 export function VoIPHandler() {
   const [activeCall, setActiveCall] = useState<VoIPCall | null>(null)
@@ -18,7 +23,7 @@ export function VoIPHandler() {
 
   const matchedPatient = activeCall?.patientId 
     ? (patients ?? []).find(p => p.id === activeCall.patientId)
-    : (patients ?? []).find(p => p.phone === activeCall?.phoneNumber)
+    : (patients ?? []).find(p => normalizePhone(p.phone) === normalizePhone(activeCall?.phoneNumber || ''))
 
   const upcomingAppointments = matchedPatient
     ? (appointments ?? [])
@@ -41,7 +46,7 @@ export function VoIPHandler() {
     const newCall: VoIPCall = {
       id: `call-${Date.now()}`,
       phoneNumber,
-      patientId: (patients ?? []).find(p => p.phone === phoneNumber)?.id,
+      patientId: (patients ?? []).find(p => normalizePhone(p.phone) === normalizePhone(phoneNumber))?.id,
       callStartedAt: new Date().toISOString(),
       direction: 'inbound',
       status: 'active',
@@ -63,6 +68,14 @@ export function VoIPHandler() {
 
   return (
     <div className="space-y-4">
+      <Alert className="bg-accent/10 border-accent">
+        <Sparkle className="w-4 h-4" weight="duotone" />
+        <AlertDescription>
+          <strong>VoIP Screen Pop with Validated Numbers:</strong> Incoming calls are matched against validated phone numbers 
+          from patient intake. Screen pop displays phone validation status, line type, and SMS capability.
+        </AlertDescription>
+      </Alert>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -70,7 +83,7 @@ export function VoIPHandler() {
             VoIP Screen Pop Simulator
           </CardTitle>
           <CardDescription>
-            Simulate incoming calls to see instant patient profile popups
+            Simulate incoming calls to see instant patient profile popups with validated phone data
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -87,6 +100,9 @@ export function VoIPHandler() {
               >
                 <Phone className="w-4 h-4" weight="fill" />
                 {patient.firstName} {patient.lastName}
+                {patient.phoneValidated && (
+                  <CheckCircle className="w-3 h-3 text-green-600" weight="fill" />
+                )}
               </Button>
             ))}
           </div>
@@ -142,6 +158,47 @@ export function VoIPHandler() {
                       <p className="font-medium">{matchedPatient.preferredContactMethod}</p>
                     </div>
                   </div>
+
+                  {matchedPatient.phoneValidated && (
+                    <div className="pt-3 border-t">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" weight="fill" />
+                        <span className="text-sm font-semibold text-green-700">Phone Validated</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 bg-green-50 p-3 rounded-lg">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Line Type</p>
+                          <Badge variant="outline" className="bg-white mt-1">
+                            {matchedPatient.phoneLineType?.toUpperCase() || 'UNKNOWN'}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">SMS Capable</p>
+                          <Badge 
+                            variant={matchedPatient.canReceiveSms ? 'default' : 'secondary'}
+                            className={matchedPatient.canReceiveSms ? 'bg-green-600 mt-1' : 'mt-1'}
+                          >
+                            {matchedPatient.canReceiveSms ? 'Yes' : 'No'}
+                          </Badge>
+                        </div>
+                        {matchedPatient.phoneCarrier && (
+                          <div className="col-span-2">
+                            <p className="text-xs text-muted-foreground">Carrier</p>
+                            <p className="text-sm font-medium">{matchedPatient.phoneCarrier}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {!matchedPatient.phoneValidated && (
+                    <Alert variant="destructive" className="mt-3">
+                      <Warning className="w-4 h-4" weight="duotone" />
+                      <AlertDescription>
+                        Phone number not validated - SMS notifications may fail
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   <div className="flex items-center gap-4 pt-3 border-t">
                     {!matchedPatient.hipaaFormCompleted && (
@@ -241,6 +298,12 @@ export function VoIPHandler() {
               <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" weight="duotone" />
               <p className="text-muted-foreground">Patient not found in system</p>
               <p className="text-sm text-muted-foreground mt-1">{activeCall?.phoneNumber}</p>
+              <Alert variant="destructive" className="mt-4 max-w-md mx-auto">
+                <Warning className="w-4 h-4" weight="duotone" />
+                <AlertDescription>
+                  No patient record matched this phone number. Please verify the number or create a new patient record.
+                </AlertDescription>
+              </Alert>
               <Button variant="destructive" onClick={endCall} className="mt-6">
                 End Call
               </Button>
