@@ -1,189 +1,167 @@
 # Planning Guide
 
-A comprehensive billing and authorization management system for healthcare staff to track payments, manage claims, and monitor prior authorizations with unit tracking, expiration monitoring, and automated workflow support.
+A comprehensive appointment booking testing system that validates authorization requirements for different patient condition types, ensuring proper prior authorization checks before scheduling appointments.
 
 **Experience Qualities**: 
-1. **Financial Clarity** - The interface should provide clear visibility into outstanding balances, payments, and authorization status with organized data presentation
-2. **Proactive Management** - Warning systems for expiring authorizations and low units should be prominent, enabling staff to act before issues arise
-3. **Operational Efficiency** - Billing workflows must be streamlined for busy staff, with quick search, filtering, and status updates
+1. **Clarity & Precision** - The interface should clearly show which condition types require authorization and which appointments are properly authorized
+2. **Validation Focus** - Visual feedback must immediately indicate authorization status, missing authorizations, and expired/denied states
+3. **Testing Efficiency** - Test scenarios should be easy to execute with clear results showing authorization requirement logic working correctly
 
 **Complexity Level**: Light Application (multiple features with basic state)
-This is a billing dashboard with multiple coordinated views for payments, charges, claim denials, and prior authorization management. It requires state management for different data types and filtering capabilities, but workflows are relatively straightforward.
+This is a testing dashboard that simulates appointment booking workflows with authorization requirement validation. It requires state management for patients, authorizations, and appointments, with clear test case execution and result visualization.
 
 ## Essential Features
 
-### Prescription Creation
-- **Functionality**: Search medications, specify dosage/frequency/duration, add instructions
-- **Purpose**: Core workflow for creating new prescriptions safely and efficiently
-- **Trigger**: Provider clicks "New Prescription" button
-- **Progression**: Select patient → Search drug → Configure dosage/frequency/duration → Add instructions → Review warnings → Confirm prescription
-- **Success criteria**: Prescription saved with complete medication details, dosing instructions clearly specified
+### Test Patient Management
+- **Functionality**: Display test patients with different condition types to validate authorization requirements
+- **Purpose**: Provide test data representing all condition types (physicalTherapy, chronicCare, postOp, primaryCare, wellness)
+- **Trigger**: Application loads
+- **Progression**: View patient list → Identify condition type → See authorization requirement status → Select patient for testing
+- **Success criteria**: All 5 condition types represented, clear visual indicators of which require authorization
 
-### Allergy Cross-Checking
-- **Functionality**: Automatically scan selected medication against patient's documented allergies
-- **Purpose**: Prevent allergic reactions by catching contraindicated medications before prescribing
-- **Trigger**: Medication selected in prescription form
-- **Progression**: System checks drug class/ingredients → Match against patient allergies → Display prominent warning if conflict detected → Require acknowledgment to proceed
-- **Success criteria**: Allergy conflicts immediately visible, prescriber cannot proceed without explicit override acknowledgment
+### Authorization Requirement Validation
+- **Functionality**: Check if selected patient's condition type requires prior authorization before booking
+- **Purpose**: Enforce authorization rules: physicalTherapy, chronicCare, postOp require auth; primaryCare and wellness do not
+- **Trigger**: Patient selected for appointment booking
+- **Progression**: Select patient → System checks condition type against rules → Display authorization requirement → Block/allow booking accordingly
+- **Success criteria**: Correct authorization requirement displayed for each condition type, booking flow adapts based on requirement
 
-### Drug-Drug Interaction Warnings
-- **Functionality**: Analyze new prescription against patient's current medications for interactions
-- **Purpose**: Identify potentially dangerous medication combinations
-- **Trigger**: Medication selected in prescription form
-- **Progression**: System checks selected drug → Compare against active prescriptions → Identify interactions by severity → Display warnings with severity levels → Provide clinical guidance
-- **Success criteria**: Interactions categorized by severity (minor/moderate/severe), clinical recommendations provided, severe interactions require override justification
+### Authorization Status Checking
+- **Functionality**: Validate that patient has active authorization with available units before appointment booking
+- **Purpose**: Prevent booking appointments for patients without valid authorizations
+- **Trigger**: Attempt to book appointment for patient requiring authorization
+- **Progression**: Check patient authorizations → Verify status is 'active' → Verify units available → Display authorization selection → Validate before booking
+- **Success criteria**: Only active authorizations shown, expired/denied authorizations blocked, unit availability validated
 
-### Patient Allergy Management
-- **Functionality**: Add, edit, and remove patient allergies with reaction details
-- **Purpose**: Maintain accurate allergy records for cross-checking
-- **Trigger**: Provider accesses patient allergy section
-- **Progression**: View current allergies → Add new allergy → Specify allergen and reaction type → Save to patient record
-- **Success criteria**: Allergies persist across sessions, reaction severity documented, allergies immediately used in checking logic
+### Appointment Booking with Authorization Linking
+- **Functionality**: Book appointments and automatically link to selected prior authorization
+- **Purpose**: Track which authorization is used for each appointment to enable unit reconciliation
+- **Trigger**: User completes appointment booking form for patient requiring authorization
+- **Progression**: Select patient → Choose provider/date/time → Select authorization (if required) → Confirm booking → Link authorization to appointment
+- **Success criteria**: Appointment created with linkedPriorAuthId field populated, requiresAuthorization flag set correctly
 
-### Active Prescription Management
-- **Functionality**: View, discontinue, and modify active prescriptions
-- **Purpose**: Maintain accurate medication list for interaction checking and patient care
-- **Trigger**: Provider views patient prescription history
-- **Progression**: Display active prescriptions → Select prescription → Discontinue or modify → Update status → Refresh interaction checks
-- **Success criteria**: Clear distinction between active/discontinued medications, discontinuation persists across sessions
+### Test Scenario Execution
+- **Functionality**: Execute predefined test scenarios to validate authorization workflow logic
+- **Purpose**: Systematically test all authorization requirement combinations and edge cases
+- **Trigger**: User clicks "Run Test" button for specific scenario
+- **Progression**: Execute test case → Validate authorization check → Attempt booking → Display pass/fail result → Show detailed feedback
+- **Success criteria**: All test scenarios execute correctly, clear pass/fail indicators, detailed error messages for failures
 
-### Drug Formulary Import
-- **Functionality**: Import medications from external pharmacy databases (Medicare Part D, Express Scripts, CVS Caremark)
-- **Purpose**: Expand medication database with comprehensive formulary data including tier classification and NDC codes
-- **Trigger**: Provider clicks "Import Formulary" button in header
-- **Progression**: View available databases → Select database → Preview medications → Select drugs to import → Confirm import → Add to medication database
-- **Success criteria**: Imported medications immediately available for prescribing, duplicate prevention, tier and manufacturer data preserved
+### Authorization Unit Tracking Display
+- **Functionality**: Show authorization unit consumption and remaining units for active authorizations
+- **Purpose**: Visualize how appointment bookings consume authorization units
+- **Trigger**: Display patient's active authorizations
+- **Progression**: Show total units → Show used units → Calculate remaining → Display progress bar → Highlight low units (≤3)
+- **Success criteria**: Accurate unit calculations, visual indicators for low units, unit depletion clearly visible
 
-### Prior Authorization Management
-- **Functionality**: Track insurance prior authorizations with unit tracking, expiration monitoring, and automated workflow triggers
-- **Purpose**: Ensure clinical services are properly authorized, prevent denials, and manage authorization lifecycle
-- **Trigger**: Billing staff adds authorization, or automatic check when clinical case created
-- **Progression**: Add authorization details → Link to patient and service code → Track units consumed per appointment → Monitor expiration dates → Generate renewal tasks → View status dashboard
-- **Success criteria**: Authorization units auto-decrement on appointment completion, expiration warnings 30 days in advance, low unit alerts at 3 remaining, denied/expired authorizations clearly highlighted in bold red
-
-### Prior Authorization Workflow Integration
-- **Functionality**: Automatically check for active authorizations when clinical cases created, create billing tasks for missing or expiring authorizations
-- **Purpose**: Proactively manage authorization requirements in clinical workflow
-- **Trigger**: New clinical concern case created, or scheduled authorization check runs
-- **Progression**: Case created → Check patient authorizations → Flag missing auth → Create task for billing team → Alert on expiring auth (30 days) → Alert on low units (≤3)
-- **Success criteria**: Billing tasks auto-created, no clinical case proceeds without auth check, renewal initiated before expiration
+### Missing Authorization Alerts
+- **Functionality**: Display prominent warnings when attempting to book appointments for patients without required authorizations
+- **Purpose**: Prevent unauthorized appointments from being scheduled
+- **Trigger**: Attempt to book appointment for patient requiring authorization but lacking active auth
+- **Progression**: Detect missing authorization → Block booking action → Display error alert → Suggest adding authorization first
+- **Success criteria**: Booking blocked for missing authorization, clear error message, actionable guidance provided
 
 ## Edge Case Handling
 
-- **No Patient Selected** - Disable prescription creation, show prompt to select patient first
-- **Empty Medication Search** - Display helpful message suggesting search tips or showing common medications
-- **Multiple Severe Warnings** - Stack warnings visually with most severe on top, require acknowledgment of each
-- **No Active Medications** - Skip interaction checking, show message that no interactions are possible
-- **No Documented Allergies** - Display notice prompting provider to confirm no known allergies
-- **Duplicate Prescription** - Warn if prescribing medication already active for patient
-- **Rapid Successive Searches** - Debounce search input to prevent excessive API-like calls
-- **Duplicate Formulary Import** - Prevent importing medications that already exist in database, check by brand/generic name
-- **Empty Formulary Selection** - Disable import button if no medications selected from preview
-- **Large Formulary Import** - Show progress indicator during import, simulate async processing
-- **Missing Prior Authorization** - When clinical case created without active auth, auto-create billing task to verify if auth needed
-- **Expired Authorization Used** - Highlight in bold red, prevent unit consumption, alert billing team
-- **Denied Authorization Override** - Show denial reason prominently, require supervisor approval to proceed
-- **Multiple Active Authorizations** - Select auth with most remaining units when auto-tracking
-- **Authorization at Exactly 0 Units** - Auto-mark as expired, trigger renewal task
+- **No Active Authorizations** - Block booking for patients requiring auth but having only expired/denied authorizations
+- **Multiple Active Authorizations** - Allow selection from multiple valid authorizations, default to one with most remaining units
+- **Authorization at Zero Units** - Prevent selection of authorizations with no remaining units, display as depleted
+- **Expired Authorization Selected** - Block booking if selected authorization expired between selection and submission
+- **Condition Type Without Requirement** - Allow direct booking for primaryCare and wellness without authorization checks
+- **Missing Patient Selection** - Disable booking button until patient selected, show guidance message
+- **Incomplete Booking Form** - Validate all required fields before submission, highlight missing data
+- **Authorization Unit Edge Cases** - Handle exactly 1 unit remaining, exactly 0 units, negative unit scenarios
 
 ## Design Direction
 
-The design should evoke clinical precision, medical authority, and life-critical seriousness. This is a tool where mistakes have real consequences, so the interface must feel professional, trustworthy, and methodical. Warning states should command immediate attention through bold color and unmissable placement. The overall aesthetic should balance medical sterility with modern digital polish—clean but not cold, serious but not intimidating.
+The design should evoke testing reliability, clinical precision, and clear validation feedback. This is a quality assurance tool where the interface must make test results immediately obvious—success states should feel reassuring, failure states should command attention. The overall aesthetic should balance technical testing rigor with approachable usability, using color strategically to communicate authorization status at a glance.
 
 ## Color Selection
 
-Medical-inspired palette with strong warning hierarchy and clinical credibility.
+Testing-focused palette with strong pass/fail indicators and clear status hierarchy.
 
-- **Primary Color**: Deep Medical Blue (oklch(0.45 0.08 250)) - Conveys medical authority, trustworthiness, and clinical professionalism; used for primary actions and headers
+- **Primary Color**: Deep Testing Blue (oklch(0.50 0.12 250)) - Conveys technical reliability and test execution; used for primary actions
 - **Secondary Colors**: 
-  - Soft Clinical Gray (oklch(0.92 0.005 250)) - Supporting backgrounds, de-emphasized content
+  - Soft Neutral Gray (oklch(0.95 0.005 250)) - Supporting backgrounds, neutral states
   - Crisp White (oklch(0.99 0 0)) - Card backgrounds, clean separation
-- **Accent Color**: Vibrant Safety Teal (oklch(0.65 0.15 200)) - Used for confirmed safe actions, successful states, positive indicators
-- **Warning Hierarchy**:
-  - Minor Warning Yellow (oklch(0.85 0.12 85)) - Minor interactions, information notices
-  - Moderate Warning Orange (oklch(0.70 0.18 45)) - Moderate interactions requiring attention
-  - Severe Warning Red (oklch(0.55 0.22 25)) - Severe interactions, allergy conflicts, critical alerts
+- **Accent Color**: Success Green (oklch(0.70 0.18 145)) - Used for passed tests, active authorizations, successful validations
+- **Status Hierarchy**:
+  - Active/Valid (oklch(0.70 0.18 145)) - Active authorizations, valid states, test passes
+  - Warning Yellow (oklch(0.80 0.14 85)) - Low units, expiring soon, caution states
+  - Blocked/Error Red (oklch(0.60 0.22 25)) - Missing authorization, expired, denied, test failures
+  - Neutral Info (oklch(0.60 0.12 250)) - Informational states, no auth required
 - **Foreground/Background Pairings**:
-  - Primary Blue (oklch(0.45 0.08 250)): White text (oklch(0.99 0 0)) - Ratio 8.9:1 ✓
-  - Secondary Gray (oklch(0.92 0.005 250)): Dark text (oklch(0.25 0.01 250)) - Ratio 12.1:1 ✓
-  - Accent Teal (oklch(0.65 0.15 200)): White text (oklch(0.99 0 0)) - Ratio 5.2:1 ✓
-  - Severe Red (oklch(0.55 0.22 25)): White text (oklch(0.99 0 0)) - Ratio 6.8:1 ✓
-  - Moderate Orange (oklch(0.70 0.18 45)): Dark text (oklch(0.25 0.01 250)) - Ratio 7.5:1 ✓
+  - Primary Blue (oklch(0.50 0.12 250)): White text (oklch(0.99 0 0)) - Ratio 7.8:1 ✓
+  - Success Green (oklch(0.70 0.18 145)): White text (oklch(0.99 0 0)) - Ratio 5.5:1 ✓
+  - Error Red (oklch(0.60 0.22 25)): White text (oklch(0.99 0 0)) - Ratio 6.8:1 ✓
+  - Warning Yellow (oklch(0.80 0.14 85)): Dark text (oklch(0.25 0.01 250)) - Ratio 9.2:1 ✓
 
 ## Font Selection
 
-Typography should convey medical precision and modern clinical software—highly legible for critical information scanning with a professional, technical character.
+Typography should convey technical precision and testing clarity—highly legible for test results and status indicators.
 
-- **Primary Typeface**: IBM Plex Sans - Clean, technical, and highly legible; excellent for medical software
-- **Monospace Typeface**: IBM Plex Mono - For medication codes, dosages, and technical details
+- **Primary Typeface**: Space Grotesk - Modern, technical, and highly legible; excellent for testing interfaces
+- **Monospace Typeface**: JetBrains Mono - For authorization numbers, unit counts, and technical details
 
 - **Typographic Hierarchy**:
-  - H1 (App Title): IBM Plex Sans Semibold/32px/tight letter spacing (-0.02em)
-  - H2 (Section Headers): IBM Plex Sans Semibold/24px/tight letter spacing (-0.01em)
-  - H3 (Subsection): IBM Plex Sans Medium/18px/normal letter spacing
-  - Body (Main Content): IBM Plex Sans Regular/15px/line-height 1.6
-  - Small (Metadata): IBM Plex Sans Regular/13px/line-height 1.5
-  - Code (Dosages/IDs): IBM Plex Mono Medium/14px/normal spacing
+  - H1 (App Title): Space Grotesk Bold/36px/tight letter spacing (-0.03em)
+  - H2 (Section Headers): Space Grotesk Semibold/24px/tight letter spacing (-0.01em)
+  - H3 (Subsection): Space Grotesk Medium/18px/normal letter spacing
+  - Body (Main Content): Space Grotesk Regular/15px/line-height 1.6
+  - Small (Metadata): Space Grotesk Regular/13px/line-height 1.5
+  - Code (Auth Numbers/Units): JetBrains Mono Medium/14px/normal spacing
 
 ## Animations
 
-Animations should be purposeful and restrained, focusing on safety-critical feedback and smooth transitions. Warning states should animate in with attention-grabbing motion (scale + fade) to ensure they're noticed. Interaction checking should show subtle loading states. Form submissions should provide clear confirmation animations. Overall, motion should reinforce the clinical seriousness while maintaining modern software polish.
+Animations should emphasize test execution and validation feedback. Test result transitions should be satisfying and clear (fade + scale for status changes). Authorization status checks should show subtle loading indicators. Pass/fail states should animate in with appropriate energy—gentle confirmation for success, attention-grabbing for failures. Overall, motion should reinforce the testing workflow while maintaining professional restraint.
 
 ## Component Selection
 
 - **Components**:
-  - Dialog - For prescription creation modal workflow and formulary import
-  - Command - For medication search with keyboard navigation
-  - Card - For prescription items, allergy cards, warning panels, formulary database selection
-  - Alert - For warning banners (with custom styling for severity levels)
-  - Badge - For severity indicators, medication status tags, formulary tier classification
-  - Table - For prescription history listing
-  - Input - For dosage, frequency, duration fields
-  - Textarea - For prescription instructions and override justifications
-  - Button - Primary (prescribe), Secondary (cancel), Destructive (discontinue)
-  - Separator - To divide sections clearly
-  - Accordion - For collapsible interaction details
-  - ScrollArea - For long medication lists and formulary preview
-  - Progress - For formulary import progress indicator
-  - Checkbox - For selecting medications during formulary import
+  - Card - For patient cards, authorization cards, test result displays
+  - Badge - For status indicators (active/expired/denied), condition types, authorization requirements
+  - Alert - For test results, missing authorization warnings, validation errors
+  - Table - For patient listing, authorization listing
+  - Button - Primary (run test, book appointment), Secondary (cancel), Destructive (clear data)
+  - Dialog - For appointment booking form
+  - Progress - For authorization unit consumption visualization
+  - Select - For patient selection, authorization selection, provider selection
+  - Calendar - For appointment date selection
+  - Separator - To divide test sections clearly
+  - ScrollArea - For long patient/authorization lists
   
 - **Customizations**:
-  - Custom warning Alert variants with severity-based colors (minor/moderate/severe)
-  - Enhanced Badge with pulsing animation for severe warnings
-  - Custom medication search Command with drug class categorization
-  - Prescription Card with expandable details section
+  - Custom Badge variants for authorization status (active=green, expired=red, denied=red, pending=yellow)
+  - Enhanced Alert variants for test results (success=green, error=red)
+  - Custom Card with colored left border indicating authorization status
+  - Progress bar with color coding for unit levels (high=green, medium=yellow, low=red)
   
 - **States**:
-  - Buttons: Clear hover elevation, disabled state for unsafe actions, loading state during checks
-  - Inputs: Focus state with blue ring, error state with red border for required fields
-  - Cards: Hover elevation on interactive cards, selected state for active prescription
-  - Warnings: Pulsing border for severe, solid border for moderate, dashed for minor
+  - Buttons: Clear hover states, disabled when validation fails, loading state during test execution
+  - Cards: Hover elevation on selectable items, selected state with border highlight
+  - Badges: Solid background for status indicators, subtle pulse for active states
+  - Alerts: Distinct colors and icons for different severities
   
 - **Icon Selection**:
-  - Pills (medication/prescription icons)
-  - Warning, WarningCircle (severity-based warnings)
-  - CheckCircle (safe/verified states)
-  - MagnifyingGlass (search)
-  - Plus, X (add/remove)
-  - ClockCounterClockwise (history)
-  - User (patient selection)
-  - Database (formulary import)
-  - Download (import action)
-  - Package (medication count)
-  - ArrowRight (navigation)
-  - FileText (prior authorization documents)
-  - XCircle (denied/expired status)
-  - Clock (pending/expiring status)
+  - TestTube, Flask (testing icons)
+  - CheckCircle, XCircle (pass/fail indicators)
+  - Warning, WarningCircle (caution states)
+  - ShieldCheck, ShieldWarning (authorization status)
+  - User, UserCircle (patient indicators)
+  - CalendarCheck (appointment booking)
+  - ClipboardText (requirements)
+  - Activity (unit tracking)
+  - Clock (expiration)
   
 - **Spacing**:
   - Cards: p-6 padding for content breathing room
-  - Form fields: gap-4 between inputs for clear separation
-  - Warning panels: p-5 with mb-4 to ensure visibility
-  - Section spacing: space-y-6 between major sections
+  - Test sections: gap-6 between test scenarios
+  - Result panels: p-5 with mb-4 to ensure visibility
+  - List items: space-y-3 between items
   
 - **Mobile**:
-  - Stack prescription form fields vertically on mobile
-  - Full-screen Dialog on mobile for prescription creation
+  - Stack patient and authorization cards vertically
+  - Full-screen Dialog for appointment booking
   - Simplified Table view with essential columns only
-  - Warning alerts become fixed to bottom of screen on mobile for visibility
-  - Collapsible sections for allergy/interaction details to save space
+  - Test results become scrollable cards instead of table
+  - Collapsible sections for authorization details
