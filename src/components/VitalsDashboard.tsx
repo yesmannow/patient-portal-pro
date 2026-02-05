@@ -1,19 +1,19 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useKV } from '@github/spark/hooks'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { LineChart, Line, XAxis, YAxis, Carte
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { VitalSigns, Patient } from '@/lib/types'
-import { Activity, Heart, Thermometer, ScaleIcon, ArrowUp, ArrowDown, Warning } from '@phosphor-icons/react'
+import { Heart, Thermometer, ScalesIcon, Warning } from '@phosphor-icons/react'
+import { format } from 'date-fns'
+
+interface VitalsDashboardProps {
   patientId: string
+}
 
-  const [vitals] = useKV<VitalSi
-
- 
-
-  const latestVitals = patientVitals[0]
-  const bpData = useMemo(() => {
+export function VitalsDashboard({ patientId }: VitalsDashboardProps) {
+  const [vitals] = useKV<VitalSigns[]>('vitals', [])
   const [patients] = useKV<Patient[]>('patients', [])
 
   const patient = patients?.find(p => p.id === patientId)
@@ -30,78 +30,70 @@ import { Activity, Heart, Thermometer, ScaleIcon, ArrowUp, ArrowDown, Warning } 
       .reverse()
       .map(v => ({
         date: format(new Date(v.recordedAt), 'MM/dd'),
-        date: format(new Date(v.recordedAt
+        systolic: v.bloodPressureSystolic,
+        diastolic: v.bloodPressureDiastolic
       }))
-
-    return patientVit
-
-      .map(v => ({
-        heartRate: v.hea
   }, [patientVitals])
-  const getBPStatus
-    if (systolic
-    return { statu
 
-    if (!bmi) retur
-    if (b
-    return { status: 
+  const bmiData = useMemo(() => {
+    return patientVitals
+      .filter(v => v.bmi)
+      .slice(0, 10)
+      .reverse()
+      .map(v => ({
+        date: format(new Date(v.recordedAt), 'MM/dd'),
+        bmi: v.bmi
+      }))
+  }, [patientVitals])
 
-  const bmiStatus = getBMIStatus(latest
-  if (!patient) {
+  const getBPStatus = (systolic?: number, diastolic?: number) => {
+    if (!systolic || !diastolic) return { status: 'Unknown', color: 'bg-slate-500' }
+    if (systolic >= 140 || diastolic >= 90) return { status: 'High', color: 'bg-red-600' }
+    if (systolic >= 130 || diastolic >= 80) return { status: 'Elevated', color: 'bg-amber-600' }
+    return { status: 'Normal', color: 'bg-green-600' }
   }
-  return (
-      {latestVit
-        (latestVit
-      ) && (
-          <Warning className="w
-         
-        </Alert>
 
-        <Card>
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              Blood Pressure
-          </CardHeader>
-            {latestVitals?.bloodPressureSystolic && la
-   
+  const getBMIStatus = (bmi?: number) => {
+    if (!bmi) return { status: 'Unknown', color: 'bg-slate-500' }
+    if (bmi >= 30) return { status: 'Obese', color: 'bg-red-600' }
+    if (bmi >= 25) return { status: 'Overweight', color: 'bg-amber-600' }
+    if (bmi >= 18.5) return { status: 'Normal', color: 'bg-green-600' }
+    return { status: 'Underweight', color: 'bg-blue-600' }
+  }
 
-                  <Badge className={bpStat
-                </div>
-            ) : (
-            )}
-        </Card>
-        <Card>
-   
+  const bpStatus = getBPStatus(latestVitals?.bloodPressureSystolic, latestVitals?.bloodPressureDiastolic)
+  const bmiStatus = getBMIStatus(latestVitals?.bmi)
 
-          </CardHeader>
-            {latestVitals?.heartRate ? (
-
-              </>
-              <div className="text-sm text-muted-foreground">No data</div
-   
-
-          
-              <ScalesIcon class
-            </CardTitle>
-          <CardContent>
-              <>
-                <div className="flex items-center gap-2 mt-2">
-            
-            ) : (
-            )}
-        </Card>
-        <Card>
-            <CardTitle classN
-              Te
-        
-
-                <div className="text-2xl font-bold">{latestVitals.temperatur
-              
-              <div className="text-sm t
-          </CardContent>
+  if (!patient) {
+    return (
+      <div className="p-6 text-center text-muted-foreground">
+        Patient not found
       </div>
-      {bpData.length > 1 && 
-          <CardHeader>
-            <CardDescri
+    )
+  }
+
+  return (
+    <div className="space-y-6 p-6">
+      {latestVitals && (
+        (latestVitals.bloodPressureSystolic && latestVitals.bloodPressureSystolic >= 140) ||
+        (latestVitals.bmi && latestVitals.bmi >= 30)
+      ) && (
+        <Alert variant="destructive">
+          <Warning className="w-4 h-4" />
+          <AlertDescription>
+            Critical vital signs detected. Please review immediately.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Heart className="w-4 h-4" weight="duotone" />
+              Blood Pressure
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             {latestVitals?.bloodPressureSystolic && latestVitals?.bloodPressureDiastolic ? (
               <>
@@ -141,7 +133,7 @@ import { Activity, Heart, Thermometer, ScaleIcon, ArrowUp, ArrowDown, Warning } 
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <ScaleIcon className="w-4 h-4" weight="duotone" />
+              <ScalesIcon className="w-4 h-4" weight="duotone" />
               BMI
             </CardTitle>
           </CardHeader>
@@ -230,50 +222,24 @@ import { Activity, Heart, Thermometer, ScaleIcon, ArrowUp, ArrowDown, Warning } 
                 <Line 
                   type="monotone" 
                   dataKey="bmi" 
+                  stroke="oklch(0.45 0.15 245)" 
+                  strokeWidth={2}
+                  name="BMI"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      {patientVitals.length === 0 && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Heart className="w-12 h-12 text-muted-foreground mx-auto mb-4" weight="duotone" />
+            <p className="text-muted-foreground">No vital signs recorded for this patient yet</p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}

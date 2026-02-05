@@ -586,7 +586,7 @@ export async function reconcileAuthUnits(
   const newUsedUnits = priorAuth.usedUnits + 1
   const remainingUnits = priorAuth.totalUnits - newUsedUnits
 
-  let newStatus: PriorAuthStatus = priorAuth.status
+  let newStatus = priorAuth.status
   if (remainingUnits <= 0) {
     newStatus = 'expired'
   }
