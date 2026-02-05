@@ -122,3 +122,10 @@ export class WorkflowEngine {
     return uniqueTasks
   }
 }
+
+export function processNewCase(newCase: Case, providers: any[]): Task | null {
+  if (newCase.urgency === 'urgent') {
+    return WorkflowEngine.createUrgentCaseTask(newCase, providers)
+  }
+  return null
+}

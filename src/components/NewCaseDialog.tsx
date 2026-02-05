@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Case, CaseType, Urgency, Task, Provider } from '@/lib/types'
-import { WorkflowEngine } from '@/lib/workflow-engine'
+import { processNewCase } from '@/lib/workflow-engine'
 import { toast } from 'sonner'
 
 interface NewCaseDialogProps {
@@ -43,7 +43,7 @@ export function NewCaseDialog({ open, onOpenChange, patientId }: NewCaseDialogPr
     setCases((current) => [...(current ?? []), newCase])
     
     if (urgency === 'urgent') {
-      const urgentTask = WorkflowEngine.createUrgentCaseTask(newCase, providers || [])
+      const urgentTask = processNewCase(newCase, providers || [])
       if (urgentTask) {
         setTasks((current) => [...(current ?? []), urgentTask])
         toast.success('Urgent case created', {
