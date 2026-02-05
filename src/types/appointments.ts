@@ -1,92 +1,84 @@
 export type ConditionType = 
-  | 'chronic-disea
+  | 'chronic-disease'
   | 'mental-health'
   | 'emergency'
-  | 'mental-health'
   | 'surgical-consult'
-  | 'emergency'
-
   | 'procedure'
   | 'urgent-care'
-export type Pro
+  | 'routine-checkup'
+  | 'follow-up'
+
+export type ProviderSpecialty = 
+  | 'family-medicine'
+  | 'internal-medicine'
+  | 'pediatrics'
+  | 'cardiology'
   | 'orthopedics'
-  | 'psychiatry
-  | 'emergency-med
-export type Autho
+  | 'psychiatry'
+  | 'emergency-medicine'
+  | 'surgery'
 
+export type AuthorizationStatus = 
   | 'approved'
+  | 'pending'
+  | 'denied'
+  | 'not-required'
 
+export type AppointmentType = 
+  | 'new-patient'
+  | 'follow-up'
+  | 'urgent-care'
+  | 'procedure'
+  | 'telehealth'
+
+export type UrgencyLevel = 
+  | 'routine'
+  | 'urgent'
+  | 'emergency'
+
+export type StatusVariant = 
   | 'success'
   | 'warning'
-export interface
-  name: strin
-  conditionType: Conditi
+  | 'destructive'
+  | 'secondary'
 
-}
-export interfa
+export interface Condition {
+  id: string
   name: string
-  availableCo
+  conditionType: ConditionType
+  requiresAuthorization: boolean
 }
-export inter
 
-  appointmentType: AppointmentT
-  scheduledTi
-  authorizat
-  status: 'sc
+export interface Provider {
+  id: string
+  name: string
+  specialty: ProviderSpecialty
+  availableConditions: ConditionType[]
+}
 
-export interface TestResul
-  timestamp:
-  conditionTyp
-  providerName: strin
-  authorizationProvided: boole
-  message: string
-    validationsPassed
-  }
-
-
+export interface Appointment {
+  id: string
+  patientId: string
+  patientName: string
+  providerId: string
+  providerName: string
+  appointmentType: AppointmentType
+  scheduledTime: Date
+  conditionType?: ConditionType
+  authorization?: AuthorizationStatus
+  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no-show'
   requiresAuth: boolean
-  urgencyLev
+  urgencyLevel?: UrgencyLevel
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export interface TestResult {
+  timestamp: Date
+  conditionType: ConditionType
+  providerName: string
+  authorizationProvided: boolean
+  message: string
+  details: {
+    validationsPassed: boolean
+    authMatched: boolean
+  }
+}
