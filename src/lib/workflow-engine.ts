@@ -46,7 +46,11 @@ export class WorkflowEngine {
             status: 'pending_confirmation',
             confirmationSentAt: now.toISOString(),
           })
-          appointmentsNeedingConfirmation.push(appointment)
+          appointmentsNeedingConfirmation.push({
+            ...appointment,
+            status: 'pending_confirmation',
+            confirmationSentAt: now.toISOString(),
+          })
         }
       }
     }

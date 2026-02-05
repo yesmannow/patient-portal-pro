@@ -7,6 +7,7 @@ interface AuthContextType {
   setCurrentUser: (user: User | null) => void
   logout: () => void
   providerRole: ProviderRole | null
+  setProviderRole: (role: ProviderRole | null) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -21,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ currentUser: currentUser ?? null, setCurrentUser, logout, providerRole: providerRole ?? null }}>
+    <AuthContext.Provider value={{ currentUser: currentUser ?? null, setCurrentUser, logout, providerRole: providerRole ?? null, setProviderRole }}>
       {children}
     </AuthContext.Provider>
   )
