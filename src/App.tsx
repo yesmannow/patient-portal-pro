@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { Toaster } from '@/components/ui/sonner'
-import { VideoCamera, User, Info, Headset, Robot, Tray, ArrowLeft } from '@phosphor-icons/react'
+import { VideoCamera, User, Info, Headset, Robot, Tray, ArrowLeft, IdentificationBadge, CalendarCheck } from '@phosphor-icons/react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,13 +10,18 @@ import { Telehealth } from '@/components/telehealth/Telehealth'
 import { SupportDashboard } from '@/components/SupportDashboard'
 import { AutomationDashboard } from '@/components/AutomationDashboard'
 import { UnifiedInbox } from '@/components/UnifiedInbox'
+import { PatientDashboard } from '@/components/PatientDashboard'
+import { FrontDeskSchedule } from '@/components/FrontDeskSchedule'
 import type { TelehealthSession, AppointmentStatus } from '@/types/telehealth'
 import type { RuleAlert, ClinicalContext } from '@/types/clinical'
 import { evaluateRules } from '@/lib/clinicalRules'
 import { getMockPatient } from '@/lib/mockPatientData'
 import { ClinicalAlertsSidebar } from '@/components/clinical/ClinicalAlertsSidebar'
+import { DEMO_PATIENTS, DEMO_PROVIDERS, DEMO_APPOINTMENTS, DEMO_CHARGES } from '@/lib/demo-data'
 
-type ViewMode = 'module-select' | 'demo-select' | 'waiting-room' | 'telehealth-session' | 'support-portal' | 'automation-dashboard' | 'unified-inbox'
+import type { Patient, Provider, Appointment, PaymentCharge } from '@/lib/types'
+
+type ViewMode = 'module-select' | 'demo-select' | 'waiting-room' | 'telehealth-session' | 'support-portal' | 'automation-dashboard' | 'unified-inbox' | 'patient-dashboard' | 'front-desk-schedule'
 
 export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('module-select')
@@ -26,6 +31,26 @@ export default function App() {
   const [sessions, setSessions] = useKV<TelehealthSession[]>('telehealth-sessions', [])
   const [clinicalAlerts, setClinicalAlerts] = useKV<RuleAlert[]>('clinical-alerts', [])
   const [showAlertsSidebar, setShowAlertsSidebar] = useState(false)
+  
+  const [patients, setPatients] = useKV<Patient[]>('patients', DEMO_PATIENTS)
+  const [providers, setProviders] = useKV<Provider[]>('providers', DEMO_PROVIDERS)
+  const [appointments, setAppointments] = useKV<Appointment[]>('appointments', DEMO_APPOINTMENTS)
+  const [charges, setCharges] = useKV<PaymentCharge[]>('payment-charges', DEMO_CHARGES)
+
+  useEffect(() => {
+    if (!patients || patients.length === 0) {
+      setPatients(DEMO_PATIENTS)
+    }
+    if (!providers || providers.length === 0) {
+      setProviders(DEMO_PROVIDERS)
+    }
+    if (!appointments || appointments.length === 0) {
+      setAppointments(DEMO_APPOINTMENTS)
+    }
+    if (!charges || charges.length === 0) {
+      setCharges(DEMO_CHARGES)
+    }
+  }, [])
 
   const mockSession: TelehealthSession = {
     id: 'session-001',
@@ -155,7 +180,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6 mb-12">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                 <Card className="hover:border-primary transition-colors cursor-pointer" onClick={() => setViewMode('demo-select')}>
                   <CardHeader className="text-center pb-4">
                     <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -178,6 +203,58 @@ export default function App() {
                     <div className="flex items-start gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5" />
                       <p>Provider and patient workflows</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="hover:border-emerald-500 transition-colors cursor-pointer" onClick={() => setViewMode('patient-dashboard')}>
+                  <CardHeader className="text-center pb-4">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-emerald-600/10 flex items-center justify-center mb-4">
+                      <IdentificationBadge size={32} weight="bold" className="text-emerald-600" />
+                    </div>
+                    <CardTitle className="text-2xl">Patient Portal</CardTitle>
+                    <CardDescription className="text-base">
+                      Patient dashboard for cases and appointments
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5" />
+                      <p>Manage health communications</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5" />
+                      <p>View and book appointments</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5" />
+                      <p>Payment history tracking</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:border-rose-500 transition-colors cursor-pointer" onClick={() => setViewMode('front-desk-schedule')}>
+                  <CardHeader className="text-center pb-4">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-rose-600/10 flex items-center justify-center mb-4">
+                      <CalendarCheck size={32} weight="bold" className="text-rose-600" />
+                    </div>
+                    <CardTitle className="text-2xl">Front Desk View</CardTitle>
+                    <CardDescription className="text-base">
+                      Daily schedule with patient quick-view
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-rose-600 mt-1.5" />
+                      <p>Today's appointment schedule</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-rose-600 mt-1.5" />
+                      <p>Hover for patient details</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-rose-600 mt-1.5" />
+                      <p>Form completion status</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -483,6 +560,62 @@ export default function App() {
             </Button>
           </div>
           <UnifiedInbox />
+        </div>
+      )}
+
+      {viewMode === 'patient-dashboard' && (
+        <div>
+          <header className="border-b border-border bg-gradient-to-br from-card via-secondary to-card sticky top-0 z-10 shadow-sm">
+            <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <Button variant="ghost" onClick={() => setViewMode('module-select')}>
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+                <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-emerald-600 shadow-lg">
+                  <IdentificationBadge size={24} weight="bold" className="text-white sm:w-7 sm:h-7" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground" style={{ letterSpacing: '-0.02em' }}>
+                    Patient Portal
+                  </h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
+                    Manage your healthcare communications
+                  </p>
+                </div>
+              </div>
+            </div>
+          </header>
+          <main className="container mx-auto px-4 sm:px-6 py-8">
+            <PatientDashboard />
+          </main>
+        </div>
+      )}
+
+      {viewMode === 'front-desk-schedule' && (
+        <div>
+          <header className="border-b border-border bg-gradient-to-br from-card via-secondary to-card sticky top-0 z-10 shadow-sm">
+            <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <Button variant="ghost" onClick={() => setViewMode('module-select')}>
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+                <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-rose-600 shadow-lg">
+                  <CalendarCheck size={24} weight="bold" className="text-white sm:w-7 sm:h-7" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground" style={{ letterSpacing: '-0.02em' }}>
+                    Front Desk Schedule
+                  </h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
+                    Daily schedule and patient check-in
+                  </p>
+                </div>
+              </div>
+            </div>
+          </header>
+          <main className="container mx-auto px-4 sm:px-6 py-8">
+            <FrontDeskSchedule />
+          </main>
         </div>
       )}
 
