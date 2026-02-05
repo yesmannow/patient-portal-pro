@@ -9,12 +9,15 @@ export type HousingStatus = 'stable' | 'unstable' | 'homeless' | 'assisted' | 'u
 export type TransportationAccess = 'own' | 'public' | 'limited' | 'none' | 'unknown'
 export type ProblemStatus = 'active' | 'inactive' | 'resolved'
 
-export type ProviderRole = 'physician' | 'therapist' | 'nurse' | 'admin' | 'frontDesk' | 'billing' | 'doctor' | 'marketing'
+export type ProviderRole = 'physician' | 'therapist' | 'nurse' | 'admin' | 'frontDesk' | 'billing' | 'doctor' | 'marketing' | 'patientRelations'
 export type AvailabilityStatus = 'available' | 'busy' | 'away' | 'offline'
 
 export type CaseType = 'question' | 'followUp' | 'billing' | 'clinicalConcern' | 'admin'
 export type Urgency = 'routine' | 'timeSensitive' | 'urgent'
 export type CaseStatus = 'open' | 'awaitingPatient' | 'awaitingProvider' | 'resolved'
+
+export type SupportInquiryCategory = 'billing' | 'technical' | 'insurance' | 'general'
+export type SupportInquiryStatus = 'new' | 'inProgress' | 'followUp' | 'resolved'
 
 export type AppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'pending_confirmation'
 
@@ -415,5 +418,44 @@ export interface PriorAuthorization {
   createdAt: string
   updatedAt: string
   caseId?: string
+}
+
+export interface SupportInquiry {
+  id: string
+  patientId: string
+  category: SupportInquiryCategory
+  subject: string
+  description: string
+  status: SupportInquiryStatus
+  priority: 'low' | 'medium' | 'high'
+  assignedToProviderId?: string
+  createdAt: string
+  updatedAt: string
+  resolvedAt?: string
+  resolvedBy?: string
+}
+
+export interface SupportMessage {
+  id: string
+  inquiryId: string
+  senderId: string
+  senderName: string
+  senderRole: 'patient' | 'staff'
+  body: string
+  attachments?: string[]
+  timestamp: string
+  isInternal: boolean
+}
+
+export interface ConfirmationSMS {
+  id: string
+  appointmentId: string
+  patientId: string
+  phoneNumber: string
+  message: string
+  sentAt: string
+  responseReceived?: '1' | '2'
+  respondedAt?: string
+  status: 'pending' | 'confirmed' | 'rescheduled' | 'failed'
 }
 
