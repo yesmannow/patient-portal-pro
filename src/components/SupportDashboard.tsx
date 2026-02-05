@@ -1,69 +1,69 @@
 import { useState, useMemo } from 'react'
-import { useKV } from '@github/spark/hooks'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
-import { 
   SupportInquiry, 
-  SupportMessage, 
   Patient, 
-  SupportInquiryCategory, 
   SupportInquiryStatus 
-} from '@/lib/types'
 import { 
-  Headset, 
   ChatCircle, 
-  CreditCard, 
   DesktopTower, 
-  Question, 
-  PaperPlaneTilt, 
-  Clock, 
+  PaperPlan
   CheckCircle, 
-  Warning, 
   UserCircle,
-  Plus
-} from '@phosphor-icons/react'
-import { toast } from 'sonner'
+} from '@phosphor-ic
 
-export function SupportDashboard() {
-  const [inquiries, setInquiries] = useKV<SupportInquiry[]>('support-inquiries', [])
-  const [messages, setMessages] = useKV<SupportMessage[]>('support-messages', [])
-  const [patients] = useKV<Patient[]>('patients', [])
-  
-  const [selectedInquiry, setSelectedInquiry] = useState<SupportInquiry | null>(null)
-  const [messageText, setMessageText] = useState('')
-  const [isInternal, setIsInternal] = useState(false)
-  const [activeFilter, setActiveFilter] = useState<'all' | SupportInquiryStatus>('all')
-  const [showNewInquiryDialog, setShowNewInquiryDialog] = useState(false)
-  const [newInquiry, setNewInquiry] = useState({
+  const [in
+  const [patie
+  const [selec
+  const [isInter
+  const [sho
     patientId: '',
-    category: 'general' as SupportInquiryCategory,
-    subject: '',
-    description: '',
-    priority: 'medium' as 'low' | 'medium' | 'high'
-  })
+    subje
+    priority: '
 
-  const filteredInquiries = useMemo(() => {
-    if (activeFilter === 'all') return inquiries || []
-    return (inquiries || []).filter(i => i.status === activeFilter)
-  }, [inquiries, activeFilter])
+    if (activ
+  }, [
+  const sortedInquiries = useM
+      const statusOrder = { ne
 
-  const sortedInquiries = useMemo(() => {
-    return [...filteredInquiries].sort((a, b) => {
-      const statusOrder = { new: 0, inProgress: 1, followUp: 2, resolved: 3 }
-      const statusDiff = statusOrder[a.status] - statusOrder[b.status]
-      if (statusDiff !== 0) return statusDiff
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
-  }, [filteredInquiries])
 
-  const inquiryMessages = useMemo(() => {
+    if (!selectedInquiry) return []
+  }, [messages, selectedInquiry])
+  
+    inProgress: (inquiries || []).filter(i => i.status === 'inProgress').length,
+    resolved: (inquiries || []).filter(i => i.status
+
+    const patient = (patients || []).find(p => p.id === patientId)
+  }
+  const getCategoryIcon = (category: SupportInqu
+      case 'techni
+      case 'insurance': return <Question className
+    }
+
+    const variants = {
+    
+
+    return <Badge className={variants[statu
+
+    const variants = {
+      medium: 'bg-slate-600 tex
+
+  }
+  const handleSendMessage = () => {
+
+      id: `msg-${Date.now()}`,
+      senderId: 'staff-001',
+      senderRole: 'staff',
+      
+    }
+
+    setIsInternal(false)
     if (!selectedInquiry) return []
     return (messages || []).filter(msg => msg.inquiryId === selectedInquiry.id)
   }, [messages, selectedInquiry])
@@ -130,183 +130,183 @@ export function SupportDashboard() {
     setInquiries(current =>
       (current || []).map(inq =>
         inq.id === selectedInquiry.id
-          ? { ...inq, updatedAt: new Date().toISOString() }
-          : inq
-      )
-    )
-
-    if (selectedInquiry?.id) {
-      setSelectedInquiry(prev => prev ? { ...prev, updatedAt: new Date().toISOString() } : null)
-    }
-  }
-
-  const handleUpdateStatus = (inquiryId: string, newStatus: SupportInquiryStatus) => {
-    setInquiries(current =>
-      (current || []).map(inq =>
-        inq.id === inquiryId
-          ? {
-              ...inq,
-              status: newStatus,
-              updatedAt: new Date().toISOString(),
-              resolvedAt: newStatus === 'resolved' ? new Date().toISOString() : inq.resolvedAt,
-              resolvedBy: newStatus === 'resolved' ? 'Support Team' : inq.resolvedBy
-            }
-          : inq
-      )
-    )
-
-    if (selectedInquiry?.id === inquiryId) {
-      setSelectedInquiry(prev => prev ? { 
-        ...prev, 
-        status: newStatus,
-        updatedAt: new Date().toISOString(),
-        resolvedAt: newStatus === 'resolved' ? new Date().toISOString() : prev.resolvedAt,
-        resolvedBy: newStatus === 'resolved' ? 'Support Team' : prev.resolvedBy
-      } : null)
-    }
-
-    toast.success('Status updated')
-  }
-
-  const handleCreateInquiry = () => {
-    if (!newInquiry.patientId || !newInquiry.subject || !newInquiry.description) {
-      toast.error('Please fill in all required fields')
-      return
-    }
-
-    const inquiry: SupportInquiry = {
-      id: `inq-${Date.now()}`,
-      patientId: newInquiry.patientId,
-      category: newInquiry.category,
-      subject: newInquiry.subject,
-      description: newInquiry.description,
-      status: 'new',
-      priority: newInquiry.priority,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-
-    setInquiries(current => [...(current || []), inquiry])
-    setShowNewInquiryDialog(false)
-    setNewInquiry({
-      patientId: '',
-      category: 'general',
-      subject: '',
       description: '',
-      priority: 'medium'
     })
-    toast.success('Inquiry created successfully')
   }
+  ret
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-6 py-8 space-y-6">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
+          <div className="flex
               <Headset className="w-10 h-10 text-purple-600" weight="duotone" />
-              Administrative Support Portal
-            </h1>
-            <Dialog open={showNewInquiryDialog} onOpenChange={setShowNewInquiryDialog}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Inquiry
+     
+   
+
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Create Support Inquiry</DialogTitle>
-                  <DialogDescription>Submit a new non-clinical support request</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="patient">Patient</Label>
-                    <Select value={newInquiry.patientId} onValueChange={(v) => setNewInquiry(prev => ({ ...prev, patientId: v }))}>
-                      <SelectTrigger id="patient">
-                        <SelectValue placeholder="Select patient" />
-                      </SelectTrigger>
+              <DialogConten
+                  <DialogTitle>C
+                </DialogHead
+             
+                    <
+                        <SelectV
                       <SelectContent>
-                        {(patients || []).map(p => (
                           <SelectItem key={p.id} value={p.id}>
-                            {p.firstName} {p.lastName}
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+             
+               
+       
+     
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Category</Label>
-                      <Select value={newInquiry.category} onValueChange={(v) => setNewInquiry(prev => ({ ...prev, category: v as SupportInquiryCategory }))}>
-                        <SelectTrigger id="category">
-                          <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="billing">Billing</SelectItem>
-                          <SelectItem value="technical">Technical</SelectItem>
-                          <SelectItem value="insurance">Insurance</SelectItem>
-                          <SelectItem value="general">General</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          <SelectItem valu
+                 
+                        </
                     </div>
-
                     <div className="space-y-2">
-                      <Label htmlFor="priority">Priority</Label>
-                      <Select value={newInquiry.priority} onValueChange={(v) => setNewInquiry(prev => ({ ...prev, priority: v as 'low' | 'medium' | 'high' }))}>
-                        <SelectTrigger id="priority">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                      <Select value={newInquiry.priority} onValueChange={(v) =>
+               
+     
 
-                  <div className="space-y-2">
-                    <Label htmlFor="subject">Subject</Label>
-                    <Input
+                        </SelectCon
+   
+
+                    <Label htmlFor="s
                       id="subject"
-                      value={newInquiry.subject}
-                      onChange={(e) => setNewInquiry(prev => ({ ...prev, subject: e.target.value }))}
-                      placeholder="Brief description of the issue"
-                    />
-                  </div>
+                      onChange={(e) => setNewInquiry(pr
+            
 
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={newInquiry.description}
-                      onChange={(e) => setNewInquiry(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Detailed information about the inquiry"
+
+                      id="description
+                      onChange
                       rows={4}
-                    />
                   </div>
-                </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowNewInquiryDialog(false)}>
                     Cancel
+                  <B
                   </Button>
-                  <Button onClick={handleCreateInquiry}>
-                    Create Inquiry
-                  </Button>
-                </DialogFooter>
               </DialogContent>
-            </Dialog>
           </div>
-          <p className="text-muted-foreground">Non-clinical patient inquiries and administrative support</p>
-        </div>
+     
 
-        <div className="grid grid-cols-4 gap-4">
-          <Card className="hover:border-blue-500 transition-colors cursor-pointer" onClick={() => setActiveFilter('new')}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">New Inquiries</CardTitle>
-              <Clock className="h-4 w-4 text-blue-600" weight="duotone" />
+            <CardHeader className="flex flex-row items-cen
+              <Clock className="h-
+            <CardCo
+              <p cla
+          </Card>
+          <Card cl
+              <CardTit
+            </CardHeader
+      
+            </CardContent>
+
+
+          
+            <CardContent>
+              <p className="text-xs text-muted-foreground mt-
+          </C
+          <Card className="hover:border-green-500 transition-color
+              <CardTitle className="text-sm font-medium">Resolved</CardTitle>
+            </CardHeader>
+              <div className="text-3xl font
+            </Car
+        </div>
+        <div className="grid grid-col
+            <CardHeader>
+                <CardTitle>Inquiries</CardTitle>
+              </div>
+                <Button v
+                </Button>
+            </CardHeader>
+              <ScrollArea clas
+                  {sortedInquiries.length === 0 ? (
+                      <ChatCircle className="w-12 h-12 text-muted-foreground mb-3" weight="duotone
+                    </div>
+                    sortedInquiries.map((inquiry
+                        key={inquiry.id}
+                        className={`p-4 rounded-lg border cu
+                        }`}
+                        <div className="flex items
+                            {getCategoryIcon(inquiry.category)}
+                          </div>
+                        </div>
+                          {getPatientName(inquiry.pa
+                        <div className="flex items-center just
+                          <span className="text-xs tex
+                          </span>
+                      </div
+                  )}
+              </ScrollArea>
+          </Card>
+
+              <div className="flex items-center justify-be
+                  {selectedInquiry && (
+                      {getPatientName(selectedInquiry.patientId)
+                  )}
+                {selectedInquiry && (
+                    <Select value={select
+                        <SelectValue />
+                      <SelectContent>
+                        <SelectItem value="inProgress">In Progress</Select
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                    </Select>
+                )}
+            </CardHeader>
+              {!selectedInquiry
+                  <ChatCir
+
+                <div className="space-y-4">
+                    <p className="text-sm font-medium mb-1">Orig
+                  </div>
+                  <ScrollArea className="h-[400px] bo
+                      <p className="text-
+                      <div className="sp
+                          <div
+                            className={`p-3 rounded-lg ${
+                            }`}
+                            <div className="flex items-center gap-2 
+                              {msg.isInt
+                               
+                          
+                        
+
+                  </ScrollArea>
+                  <div className="space-y-2">
+                      plac
+                      onChange={(e
+                    />
+                      <label className="flex items-center gap-2 text-sm">
+                          type="checkbox"
+                      
+                        
+
+                        <PaperPlaneTilt class
+                      </Button>
+                  </div>
+              )}
+          </Card>
+      </div>
+  )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stats.new}</div>
