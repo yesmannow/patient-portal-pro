@@ -2,33 +2,33 @@ import { useState, useMemo } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { PriorAuthorization, Patient } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Progress } from '@/components/ui/progress'
-import { Plus, MagnifyingGlass, FileText } from '@phosphor-icons/react'
+import { Progress } from '@/components/ui/pro
 import { toast } from 'sonner'
-
 interface PriorAuthManagerProps {
-  userRole?: 'billing' | 'nurse' | 'admin' | 'patient'
 }
+export function PriorAuthManager({ userRole = 'bill
+  const [priorAuths, setPriorAuths] = useKV<PriorAuthorization[]>('prio
+  const [searchTerm, setSearch
 
-export function PriorAuthManager({ userRole = 'billing' }: PriorAuthManagerProps) {
-  const [patients] = useKV<Patient[]>('patients', [])
-  const [priorAuths, setPriorAuths] = useKV<PriorAuthorization[]>('priorAuths', [])
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expiring' | 'low-units'>('all')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [dialogOpen, setDialogOpen] = useState(false)
 
-  const canEdit = userRole === 'billing' || userRole === 'admin'
-
-  const filteredAuths = useMemo(() => {
     const now = new Date()
-    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+
+
+        const patientName = patient ? `${patient.firstName} ${patient.lastName}`.to
+        if (!patientName.includes(searchLower) && !au
+        }
+
+
+        return auth.status === 'active'
+
+        return endDate <= thirtyDaysFromNow && endDate > now
+
+        return remaining <= 3 && remain
+
+    })
 
     let filtered = priorAuths.filter(auth => {
       if (searchTerm) {
@@ -163,23 +163,23 @@ export function PriorAuthManager({ userRole = 'billing' }: PriorAuthManagerProps
                   <div className="space-y-2">
                     <Label htmlFor="patientId">Patient</Label>
                     <Select name="patientId" required>
-                      <SelectTrigger>
+                    <Input id="totalU
                         <SelectValue placeholder="Select patient" />
-                      </SelectTrigger>
+                    <Label htmlFor="st
                       <SelectContent>
-                        {patients.map(patient => (
+                  <div className="space-y-2">
                           <SelectItem key={patient.id} value={patient.id}>
                             {patient.firstName} {patient.lastName}
                           </SelectItem>
-                        ))}
+                  <Button t
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
+                </div>
                     <Label htmlFor="insurerId">Insurer ID</Label>
                     <Input id="insurerId" name="insurerId" required />
                   </div>
-                  <div className="space-y-2">
+                className="pl-10"
                     <Label htmlFor="authNumber">Authorization Number</Label>
                     <Input id="authNumber" name="authNumber" required />
                   </div>
@@ -203,11 +203,11 @@ export function PriorAuthManager({ userRole = 'billing' }: PriorAuthManagerProps
                     <Label htmlFor="endDate">End Date</Label>
                     <Input id="endDate" name="endDate" type="date" required />
                   </div>
-                </div>
+              ) : (
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="secondary" onClick={() => setDialogOpen(false)}>
                     Cancel
-                  </Button>
+                    return 
                   <Button type="submit">
                     Add Authorization
                   </Button>
@@ -223,13 +223,13 @@ export function PriorAuthManager({ userRole = 'billing' }: PriorAuthManagerProps
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-              <Input
+                    
                 placeholder="Search by patient name or auth number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                                <
               />
-            </div>
+                  
           </div>
         </CardHeader>
         <CardContent>
@@ -270,7 +270,7 @@ export function PriorAuthManager({ userRole = 'billing' }: PriorAuthManagerProps
                                   <p className="text-sm text-muted-foreground">{auth.serviceName}</p>
                                 </div>
                               </div>
-                              {getStatusBadge(auth)}
+
                             </div>
 
                             <div className="grid grid-cols-3 gap-4 text-sm">
@@ -329,8 +329,8 @@ export function PriorAuthManager({ userRole = 'billing' }: PriorAuthManagerProps
               )}
             </TabsContent>
           </Tabs>
-        </CardContent>
+
       </Card>
-    </div>
+
   )
-}
+
