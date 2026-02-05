@@ -1,11 +1,11 @@
 import { useKV } from '@github/spark/hooks'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Patient, FormSubmission } from '@/lib/types'
-import { Users, TrendUp, Funnel, Star, Phone, Globe } from '@phosphor-icons/react'
-import { format } from 'date-fns'
+import { Users, TrendUp, Funnel, Star, Phone,
 
-export function MarketingDashboard() {
+  const [patients] = useKV<Patient[]>('patients', [])
+
+
+
   const [patients] = useKV<Patient[]>('patients', [])
   const [formSubmissions] = useKV<FormSubmission[]>('form-submissions', [])
 
@@ -15,23 +15,23 @@ export function MarketingDashboard() {
 
   const activePatients = (patients ?? []).filter(p => p.patientStatus === 'active')
 
-  const patientsBySource = (patients ?? []).reduce((acc, patient) => {
-    const source = patient.onboardingSource
-    acc[source] = (acc[source] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
-
-  const recentIntakeSubmissions = (formSubmissions ?? [])
-    .filter(fs => fs.formDefinitionId.includes('intake'))
-    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
     .slice(0, 10)
-
-  const conversionRate = (patients ?? []).length > 0 
-    ? ((activePatients.length / (patients ?? []).length) * 100).toFixed(1)
+  const conversionRate = (patients ?? []).l
     : '0'
+  const source
+    phone: Phone,
 
-  const sourceIcons: Record<string, any> = {
-    website: Globe,
+
+    website: 'Website',
+    referral: 'Referral',
+  }
+
+      <div>
+        <p className="text-muted-foreground mt-1">Lead funnel and patient 
+
+
+            <CardTitle className="text-sm fo
+          </CardHea
     phone: Phone,
     referral: Users,
     intakeForm: Funnel,
@@ -130,103 +130,103 @@ export function MarketingDashboard() {
                         <p className="font-medium">{sourceLabels[source] || source}</p>
                         <p className="text-sm text-muted-foreground">{percentage}% of total</p>
                       </div>
-                    </div>
+            ) : (
                     <div className="text-right">
                       <p className="text-2xl font-bold">{count}</p>
                       <p className="text-xs text-muted-foreground">patients</p>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                        
+                 
+                 
+                  
+                        
+               
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" weight="duotone" />
-              New Leads
-            </CardTitle>
-            <CardDescription>Recent patient inquiries</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {newPatients.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duotone" />
-                <p className="text-muted-foreground">No new leads</p>
+              
               </div>
-            ) : (
-              <div className="space-y-3">
-                {newPatients.slice(0, 5).map(patient => (
-                  <div key={patient.id} className="flex items-start justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-semibold">
-                          {patient.firstName} {patient.lastName}
-                        </p>
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-                          New
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        {patient.conditionType} • {sourceLabels[patient.onboardingSource]}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(patient.createdAt), 'MMM d, yyyy • h:mm a')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </CardContent>
-        </Card>
       </div>
-
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Funnel className="w-5 h-5" weight="duotone" />
+          <CardTitle cla
             Recent Intake Form Submissions
-          </CardTitle>
-          <CardDescription>New patient intake forms completed online</CardDescription>
-        </CardHeader>
+          <CardDescript
         <CardContent>
-          {recentIntakeSubmissions.length === 0 ? (
-            <div className="text-center py-12">
-              <Funnel className="w-12 h-12 text-muted-foreground mx-auto mb-3" weight="duotone" />
-              <p className="text-muted-foreground">No recent intake submissions</p>
-            </div>
+            <div className="text-center p
+              <p className="text-muted-foreground
           ) : (
-            <div className="space-y-2">
               {recentIntakeSubmissions.map(submission => {
-                const patient = (patients ?? []).find(p => p.id === submission.patientId)
-                if (!patient) return null
-
-                return (
-                  <div key={submission.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-medium">
-                        {patient.firstName} {patient.lastName}
-                      </p>
+                if (
+                r
+                    <div className="flex-
+                        {patient.firstName} {patient.last
                       <p className="text-sm text-muted-foreground">
-                        {patient.email} • {patient.phone}
                       </p>
-                    </div>
                     <div className="text-right">
-                      <Badge className="bg-green-600 text-white">Submitted</Badge>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(submission.submittedAt), 'MMM d, yyyy')}
+                      <p className="text-xs text-mute
                       </p>
-                    </div>
                   </div>
-                )
               })}
-            </div>
           )}
-        </CardContent>
       </Card>
-    </div>
   )
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
