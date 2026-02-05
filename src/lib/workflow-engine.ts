@@ -19,7 +19,42 @@ export class WorkflowEngine {
       }
     }
 
+    if (eventType === 'caseCreated' && 'urgency' in eventData && eventData.urgency === 'urgent') {
+      const urgentTask = this.createUrgentCaseTask(eventData as Case, providers)
+      if (urgentTask) {
+        createdTasks.push(urgentTask)
+      }
+    }
+
     return createdTasks
+  }
+
+  static createUrgentCaseTask(caseData: Case, providers: any[]): Task | null {
+    const now = new Date()
+    const dueDate = new Date(now)
+    dueDate.setHours(dueDate.getHours() + 24)
+
+    let assignedProvider = caseData.assignedProviderId 
+      ? providers.find(p => p.id === caseData.assignedProviderId)
+      : providers.find(p => p.role === 'physician') || providers[0]
+
+    if (!assignedProvider) {
+      return null
+    }
+
+    return {
+      id: `task-urgent-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      caseId: caseData.id,
+      patientId: caseData.patientId,
+      title: `URGENT: Review ${caseData.subject}`,
+      description: `This case has been marked as urgent and requires immediate attention. Case Type: ${caseData.caseType}`,
+      dueDate: dueDate.toISOString(),
+      assignedToProviderId: assignedProvider.id,
+      status: 'todo',
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+      createdByWorkflow: 'auto-urgent',
+    }
   }
 
   private static createTaskFromTemplate(

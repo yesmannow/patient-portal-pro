@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Case, CaseType, Urgency } from '@/lib/types'
+import { Case, CaseType, Urgency, Task, Provider } from '@/lib/types'
+import { WorkflowEngine } from '@/lib/workflow-engine'
 import { toast } from 'sonner'
 
 interface NewCaseDialogProps {
@@ -17,12 +18,14 @@ interface NewCaseDialogProps {
 
 export function NewCaseDialog({ open, onOpenChange, patientId }: NewCaseDialogProps) {
   const [cases, setCases] = useKV<Case[]>('cases', [])
+  const [tasks, setTasks] = useKV<Task[]>('tasks', [])
+  const [providers] = useKV<Provider[]>('providers', [])
   const [subject, setSubject] = useState('')
   const [description, setDescription] = useState('')
   const [caseType, setCaseType] = useState<CaseType>('question')
   const [urgency, setUrgency] = useState<Urgency>('routine')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     const newCase: Case = {
@@ -39,9 +42,23 @@ export function NewCaseDialog({ open, onOpenChange, patientId }: NewCaseDialogPr
 
     setCases((current) => [...(current ?? []), newCase])
     
-    toast.success('Case created successfully', {
-      description: 'Your healthcare provider will review your case shortly.',
-    })
+    if (urgency === 'urgent') {
+      const urgentTask = WorkflowEngine.createUrgentCaseTask(newCase, providers || [])
+      if (urgentTask) {
+        setTasks((current) => [...(current ?? []), urgentTask])
+        toast.success('Urgent case created', {
+          description: 'An urgent task has been created for your care team to review within 24 hours.',
+        })
+      } else {
+        toast.success('Case created successfully', {
+          description: 'Your healthcare provider will review your case shortly.',
+        })
+      }
+    } else {
+      toast.success('Case created successfully', {
+        description: 'Your healthcare provider will review your case shortly.',
+      })
+    }
 
     setSubject('')
     setDescription('')

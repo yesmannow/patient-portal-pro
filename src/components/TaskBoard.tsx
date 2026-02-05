@@ -208,7 +208,7 @@ export function TaskBoard() {
                               <User className="w-3 h-3" />
                               <span className="truncate">{getPatientName(task.patientId)}</span>
                             </div>
-                            <div className={`flex items-center gap-1 ${isOverdue(task) ? 'text-destructive font-medium' : ''}`}>
+                            <div className={`flex items-center gap-1 ${isOverdue(task) ? 'text-red-600 font-bold' : ''}`}>
                               <Clock className="w-3 h-3" />
                               <span>{getDueDateLabel(task.dueDate)}</span>
                             </div>
